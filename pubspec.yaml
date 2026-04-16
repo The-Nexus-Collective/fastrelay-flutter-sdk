@@ -4,7 +4,7 @@ version: 0.1.0
 homepage: https://github.com/The-Nexus-Collective/fastrelay-flutter-sdk
 
 environment:
-  sdk: ^3.10.4
+  sdk: ^3.10.0
   flutter: ">=1.17.0"
 
 dependencies:
