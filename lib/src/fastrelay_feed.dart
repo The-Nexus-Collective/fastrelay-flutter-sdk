@@ -304,4 +304,18 @@ class FastRelayFeed {
   }) {
     return _client.removeBookmark(activityId, options: options);
   }
+
+  Future<FastRelayFeedActivityPin> pinActivity(
+    String activityId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.pinActivity(group, feedId, activityId, options: options);
+  }
+
+  Future<void> unpinActivity(
+    String activityId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.unpinActivity(group, feedId, activityId, options: options);
+  }
 }

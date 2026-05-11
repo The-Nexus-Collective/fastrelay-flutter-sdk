@@ -769,6 +769,35 @@ class FastRelayClient {
     );
   }
 
+  Future<FastRelayFeedActivityPin> pinActivity(
+    String group,
+    String id,
+    String activityId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path:
+          '/v1/feeds/${Uri.encodeComponent(group)}/${Uri.encodeComponent(id)}/activities/${Uri.encodeComponent(activityId)}/pin',
+      options: options,
+    );
+    return FastRelayFeedActivityPin.fromJson(_asMap(response));
+  }
+
+  Future<void> unpinActivity(
+    String group,
+    String id,
+    String activityId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    await _request(
+      method: 'DELETE',
+      path:
+          '/v1/feeds/${Uri.encodeComponent(group)}/${Uri.encodeComponent(id)}/activities/${Uri.encodeComponent(activityId)}/pin',
+      options: options,
+    );
+  }
+
   Future<CursorPage<FastRelayBookmark>> listBookmarks({
     int? limit,
     String? cursor,

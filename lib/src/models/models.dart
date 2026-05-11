@@ -5,6 +5,7 @@ export 'comment.dart';
 export 'comment_reaction.dart';
 export 'content_check.dart';
 export 'cursor_page.dart';
+export 'feed_activity_pin.dart';
 export 'feedback.dart';
 export 'file.dart';
 export 'moderation_flag.dart';

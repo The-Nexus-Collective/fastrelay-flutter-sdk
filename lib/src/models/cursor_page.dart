@@ -1,9 +1,15 @@
 class CursorPage<T> {
-  const CursorPage({required this.data, this.nextCursor, this.hasMore = false});
+  const CursorPage({
+    required this.data,
+    this.nextCursor,
+    this.hasMore = false,
+    this.pinned = const [],
+  });
 
   final List<T> data;
   final String? nextCursor;
   final bool hasMore;
+  final List<T> pinned;
 
   factory CursorPage.fromJson(
     Map<String, dynamic> json,
@@ -11,18 +17,23 @@ class CursorPage<T> {
   ) {
     final rawData = json['data'];
     final entries = rawData is List ? rawData : const [];
+    final rawPinned = json['pinned'];
+    final pinnedEntries = rawPinned is List ? rawPinned : const [];
+
+    List<T> mapEntries(Iterable raw) => raw
+        .whereType<Map>()
+        .map(
+          (entry) => fromJsonT(
+            entry.map((key, value) => MapEntry(key.toString(), value)),
+          ),
+        )
+        .toList();
 
     return CursorPage<T>(
-      data: entries
-          .whereType<Map>()
-          .map(
-            (entry) => fromJsonT(
-              entry.map((key, value) => MapEntry(key.toString(), value)),
-            ),
-          )
-          .toList(),
+      data: mapEntries(entries),
       nextCursor: json['nextCursor']?.toString(),
       hasMore: _readBool(json['hasMore']) ?? false,
+      pinned: mapEntries(pinnedEntries),
     );
   }
 
@@ -31,6 +42,7 @@ class CursorPage<T> {
       'data': data.map(toJsonT).toList(),
       'nextCursor': nextCursor,
       'hasMore': hasMore,
+      'pinned': pinned.map(toJsonT).toList(),
     };
   }
 }
