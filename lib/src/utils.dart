@@ -2,51 +2,6 @@ import 'dart:convert';
 
 typedef JsonMap = Map<String, dynamic>;
 
-String toSnakeKey(String key) {
-  return key.replaceAllMapped(
-    RegExp(r'([A-Z])'),
-    (match) => '_${match.group(1)!.toLowerCase()}',
-  );
-}
-
-String toCamelKey(String key) {
-  return key.replaceAllMapped(
-    RegExp(r'_([a-z])'),
-    (match) => match.group(1)!.toUpperCase(),
-  );
-}
-
-dynamic toSnakeCaseDeep(dynamic value) {
-  if (value is DateTime) {
-    return value.toIso8601String();
-  }
-  if (value is List) {
-    return value.map(toSnakeCaseDeep).toList();
-  }
-  if (value is Map) {
-    final output = <String, dynamic>{};
-    for (final entry in value.entries) {
-      output[toSnakeKey(entry.key.toString())] = toSnakeCaseDeep(entry.value);
-    }
-    return output;
-  }
-  return value;
-}
-
-dynamic toCamelCaseDeep(dynamic value) {
-  if (value is List) {
-    return value.map(toCamelCaseDeep).toList();
-  }
-  if (value is Map) {
-    final output = <String, dynamic>{};
-    for (final entry in value.entries) {
-      output[toCamelKey(entry.key.toString())] = toCamelCaseDeep(entry.value);
-    }
-    return output;
-  }
-  return value;
-}
-
 Uri toAbsoluteUrl(String baseUrl, String path, [Map<String, dynamic>? query]) {
   final normalizedBase = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
   final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
@@ -104,15 +59,15 @@ Map<String, dynamic> buildFeedActivityQuery([Map<String, dynamic>? options]) {
     query['view'] = options['view'];
   }
   if (options.containsKey('markSeen')) {
-    query['mark_seen'] = options['markSeen'];
+    query['markSeen'] = options['markSeen'];
   }
 
   if (options.containsKey('markRead')) {
     final markRead = options['markRead'];
     if (markRead is Iterable && markRead is! String) {
-      query['mark_read'] = markRead.join(',');
+      query['markRead'] = markRead.join(',');
     } else {
-      query['mark_read'] = markRead;
+      query['markRead'] = markRead;
     }
   }
 

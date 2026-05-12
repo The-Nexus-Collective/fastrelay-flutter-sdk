@@ -43,10 +43,10 @@ void main() {
             captured = request;
             return jsonResponse({
               'id': 'reaction_1',
-              'activity_id': 'act_1',
-              'user_id': 'john',
+              'activityId': 'act_1',
+              'userId': 'john',
               'type': 'like',
-              'created_at': '2026-02-25T10:00:00Z',
+              'createdAt': '2026-02-25T10:00:00Z',
             });
           }),
         );
@@ -81,14 +81,14 @@ void main() {
             'data': [
               {
                 'id': 'reaction_1',
-                'activity_id': 'act_1',
-                'user_id': 'john',
+                'activityId': 'act_1',
+                'userId': 'john',
                 'type': 'wow',
-                'created_at': '2026-02-25T10:00:00Z',
+                'createdAt': '2026-02-25T10:00:00Z',
               },
             ],
-            'next_cursor': 'cursor_2',
-            'has_more': true,
+            'nextCursor': 'cursor_2',
+            'hasMore': true,
           });
         }),
       );
@@ -109,7 +109,7 @@ void main() {
     });
 
     test(
-      'comment methods serialize snake_case and return typed comments',
+      'comment methods serialize camelCase and return typed comments',
       () async {
         late http.BaseRequest addRequest;
         late http.BaseRequest listRequest;
@@ -125,15 +125,15 @@ void main() {
               addRequest = request;
               return jsonResponse({
                 'id': 'comment_1',
-                'activity_id': 'act_1',
-                'user_id': 'john',
+                'activityId': 'act_1',
+                'userId': 'john',
                 'text': 'hello',
-                'parent_id': null,
-                'mentioned_users': ['jane'],
-                'reaction_counts': {'like': 1},
+                'parentId': null,
+                'mentionedUsers': ['jane'],
+                'reactionCounts': {'like': 1},
                 'score': 1.25,
-                'created_at': '2026-02-25T10:00:00Z',
-                'updated_at': '2026-02-25T10:00:00Z',
+                'createdAt': '2026-02-25T10:00:00Z',
+                'updatedAt': '2026-02-25T10:00:00Z',
               });
             }
 
@@ -142,19 +142,19 @@ void main() {
               'data': [
                 {
                   'id': 'comment_1',
-                  'activity_id': 'act_1',
-                  'user_id': 'john',
+                  'activityId': 'act_1',
+                  'userId': 'john',
                   'text': 'hello',
-                  'parent_id': null,
-                  'mentioned_users': ['jane'],
-                  'reaction_counts': {'like': 1},
+                  'parentId': null,
+                  'mentionedUsers': ['jane'],
+                  'reactionCounts': {'like': 1},
                   'score': 1.25,
-                  'created_at': '2026-02-25T10:00:00Z',
-                  'updated_at': '2026-02-25T10:00:00Z',
+                  'createdAt': '2026-02-25T10:00:00Z',
+                  'updatedAt': '2026-02-25T10:00:00Z',
                 },
               ],
-              'next_cursor': null,
-              'has_more': false,
+              'nextCursor': null,
+              'hasMore': false,
             });
           }),
         );
@@ -172,7 +172,7 @@ void main() {
 
         expect(jsonDecode((addRequest as http.Request).body), {
           'text': 'hello',
-          'mentioned_users': ['jane'],
+          'mentionedUsers': ['jane'],
         });
         expect(listRequest.url.queryParameters['sort'], 'newest');
         expect(listRequest.url.queryParameters['limit'], '10');
@@ -193,10 +193,10 @@ void main() {
           if (request.method == 'POST') {
             return jsonResponse({
               'id': 'cr_1',
-              'comment_id': 'comment_1',
-              'user_id': 'john',
+              'commentId': 'comment_1',
+              'userId': 'john',
               'type': 'like',
-              'created_at': '2026-02-25T10:00:00Z',
+              'createdAt': '2026-02-25T10:00:00Z',
             });
           }
           return jsonResponse(null, status: 204);
@@ -226,22 +226,22 @@ void main() {
           if (requestCount == 1) {
             return jsonResponse({
               'id': 'bookmark_1',
-              'activity_id': 'act_1',
-              'user_id': 'john',
-              'created_at': '2026-02-25T10:00:00Z',
+              'activityId': 'act_1',
+              'userId': 'john',
+              'createdAt': '2026-02-25T10:00:00Z',
             });
           }
           return jsonResponse({
             'data': [
               {
                 'id': 'bookmark_1',
-                'activity_id': 'act_1',
-                'user_id': 'john',
-                'created_at': '2026-02-25T10:00:00Z',
+                'activityId': 'act_1',
+                'userId': 'john',
+                'createdAt': '2026-02-25T10:00:00Z',
               },
             ],
-            'next_cursor': null,
-            'has_more': false,
+            'nextCursor': null,
+            'hasMore': false,
           });
         }),
       );
@@ -266,11 +266,11 @@ void main() {
               'id': 'poll_1',
               'question': 'Best SDK?',
               'options': [
-                {'id': 'opt_1', 'text': 'FastRelay', 'vote_count': 1},
+                {'id': 'opt_1', 'text': 'FastRelay', 'voteCount': 1},
               ],
-              'total_votes': 1,
-              'user_vote': {'option_id': 'opt_1'},
-              'is_closed': false,
+              'totalVotes': 1,
+              'userVote': {'optionId': 'opt_1'},
+              'isClosed': false,
             });
           }
 
@@ -278,11 +278,11 @@ void main() {
             'id': 'poll_1',
             'question': 'Best SDK?',
             'options': [
-              {'id': 'opt_1', 'text': 'FastRelay', 'vote_count': 0},
+              {'id': 'opt_1', 'text': 'FastRelay', 'voteCount': 0},
             ],
-            'total_votes': 0,
-            'user_vote': null,
-            'is_closed': false,
+            'totalVotes': 0,
+            'userVote': null,
+            'isClosed': false,
           });
         }),
       );
@@ -304,9 +304,9 @@ void main() {
       expect(createBody['options'], [
         {'id': 'opt_1', 'text': 'FastRelay'},
       ]);
-      expect(createBody['max_votes_per_user'], 2);
+      expect(createBody['maxVotesPerUser'], 2);
       expect(createBody['anonymous'], isTrue);
-      expect(voteBody, {'option_id': 'opt_1'});
+      expect(voteBody, {'optionId': 'opt_1'});
       expect(poll.id, 'poll_1');
       expect(votedPoll.userVote, 'opt_1');
       expect(votedPoll.hasVoted, isTrue);
@@ -324,10 +324,10 @@ void main() {
             'id': 'file_1',
             'url': 'https://cdn.fastrelay.dev/file_1.png',
             'type': 'image',
-            'mime_type': 'image/png',
+            'mimeType': 'image/png',
             'size': 4,
             'metadata': {},
-            'created_at': '2026-02-25T10:00:00Z',
+            'createdAt': '2026-02-25T10:00:00Z',
           });
         }),
       );
@@ -360,10 +360,10 @@ void main() {
           captured = request;
           return jsonResponse({
             'id': 'feedback_1',
-            'activity_id': 'act_1',
-            'user_id': 'john',
+            'activityId': 'act_1',
+            'userId': 'john',
             'type': 'show_more',
-            'created_at': '2026-02-25T10:00:00Z',
+            'createdAt': '2026-02-25T10:00:00Z',
           });
         }),
       );
@@ -395,22 +395,22 @@ void main() {
                 'id': 'act_$requestCount',
                 'type': 'post',
                 'text': 'hello',
-                'user_id': 'john',
+                'userId': 'john',
                 'feeds': ['timeline:john'],
                 'visibility': 'public',
                 'custom': {},
                 'popularity': 0,
-                'reaction_counts': {'like': 1},
-                'comment_count': 0,
-                'bookmark_count': 0,
-                'created_at': '2026-02-25T10:00:00Z',
-                'updated_at': '2026-02-25T10:00:00Z',
+                'reactionCounts': {'like': 1},
+                'commentCount': 0,
+                'bookmarkCount': 0,
+                'createdAt': '2026-02-25T10:00:00Z',
+                'updatedAt': '2026-02-25T10:00:00Z',
               },
             ],
-            'next_cursor': 'next_1',
-            'has_more': true,
-            'unseen_count': 4,
-            'unread_count': 2,
+            'nextCursor': 'next_1',
+            'hasMore': true,
+            'unseenCount': 4,
+            'unreadCount': 2,
           });
         }),
       );
@@ -434,10 +434,10 @@ void main() {
           if (request.url.path.endsWith('/reactions')) {
             return jsonResponse({
               'id': 'reaction_1',
-              'activity_id': 'act_1',
-              'user_id': 'john',
+              'activityId': 'act_1',
+              'userId': 'john',
               'type': 'like',
-              'created_at': '2026-02-25T10:00:00Z',
+              'createdAt': '2026-02-25T10:00:00Z',
             });
           }
           return jsonResponse(null, status: 204);

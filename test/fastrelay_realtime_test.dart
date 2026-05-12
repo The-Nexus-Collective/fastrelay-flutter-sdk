@@ -214,12 +214,12 @@ void main() {
 
         socket.emitJson({
           'type': 'activity.created',
-          'feed_id': 'timeline:john',
-          'event_id': 'evt_1',
-          'created_at': '2026-03-03T10:00:00Z',
+          'feedId': 'timeline:john',
+          'eventId': 'evt_1',
+          'createdAt': '2026-03-03T10:00:00Z',
           'data': {
-            'user_id': 'john',
-            'reaction_counts': {'like_count': 2},
+            'userId': 'john',
+            'reactionCounts': {'likeCount': 2},
           },
         });
 
@@ -313,9 +313,9 @@ void main() {
 
       final payload = {
         'type': 'activity.created',
-        'feed_id': 'timeline:john',
-        'event_id': 'evt_dup',
-        'created_at': '2026-03-03T10:00:00Z',
+        'feedId': 'timeline:john',
+        'eventId': 'evt_dup',
+        'createdAt': '2026-03-03T10:00:00Z',
         'data': {'id': 'act_1'},
       };
 

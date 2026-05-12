@@ -991,8 +991,8 @@ class FastRelayClient {
       query: {
         'status': status,
         'reason': reason,
-        'target_type': targetType,
-        'target_id': targetId,
+        'targetType': targetType,
+        'targetId': targetId,
         'limit': limit,
         'cursor': cursor,
       },
@@ -1368,15 +1368,12 @@ class FastRelayClient {
     final streamedResponse = await _httpClient.send(request);
     final responseBody = await streamedResponse.stream.bytesToString();
     final parsedBody = parseJsonSafely(responseBody);
-    final transformedBody = (parsedBody is Map || parsedBody is List)
-        ? toCamelCaseDeep(parsedBody)
-        : parsedBody;
 
     final rateLimit = _getRateLimit(streamedResponse.headers);
     if (streamedResponse.statusCode < 200 ||
         streamedResponse.statusCode >= 300) {
-      final transformedMap = transformedBody is Map ? transformedBody : null;
-      final errorPayload = transformedMap?['error'];
+      final parsedMap = parsedBody is Map ? parsedBody : null;
+      final errorPayload = parsedMap?['error'];
       final errorMap = errorPayload is Map ? errorPayload : null;
       final fallbackMessage =
           'FastRelay API request failed (${streamedResponse.statusCode} ${streamedResponse.reasonPhrase ?? ''}).'
@@ -1385,7 +1382,7 @@ class FastRelayClient {
       throw FastRelayApiError(
         message:
             (errorMap?['message'] ??
-                    transformedMap?['message'] ??
+                    parsedMap?['message'] ??
                     fallbackMessage)
                 .toString(),
         status: streamedResponse.statusCode,
@@ -1393,17 +1390,17 @@ class FastRelayClient {
         details: errorMap?['details'],
         hint: errorMap?['hint']?.toString(),
         docUrl: errorMap?['docUrl']?.toString(),
-        requestId: transformedMap?['requestId']?.toString(),
+        requestId: parsedMap?['requestId']?.toString(),
         path: path,
         method: method,
         rateLimit: rateLimit,
       );
     }
 
-    if (transformedBody == null || transformedBody == '') {
+    if (parsedBody == null || parsedBody == '') {
       return null;
     }
-    return transformedBody;
+    return parsedBody;
   }
 
   Future<dynamic> _request({
@@ -1428,21 +1425,18 @@ class FastRelayClient {
 
     if (body != null) {
       request.headers['content-type'] = 'application/json';
-      request.body = jsonEncode(toSnakeCaseDeep(body));
+      request.body = jsonEncode(body);
     }
 
     final streamedResponse = await _httpClient.send(request);
     final responseBody = await streamedResponse.stream.bytesToString();
     final parsedBody = parseJsonSafely(responseBody);
-    final transformedBody = (parsedBody is Map || parsedBody is List)
-        ? toCamelCaseDeep(parsedBody)
-        : parsedBody;
 
     final rateLimit = _getRateLimit(streamedResponse.headers);
     if (streamedResponse.statusCode < 200 ||
         streamedResponse.statusCode >= 300) {
-      final transformedMap = transformedBody is Map ? transformedBody : null;
-      final errorPayload = transformedMap?['error'];
+      final parsedMap = parsedBody is Map ? parsedBody : null;
+      final errorPayload = parsedMap?['error'];
       final errorMap = errorPayload is Map ? errorPayload : null;
       final fallbackMessage =
           'FastRelay API request failed (${streamedResponse.statusCode} ${streamedResponse.reasonPhrase ?? ''}).'
@@ -1451,7 +1445,7 @@ class FastRelayClient {
       throw FastRelayApiError(
         message:
             (errorMap?['message'] ??
-                    transformedMap?['message'] ??
+                    parsedMap?['message'] ??
                     fallbackMessage)
                 .toString(),
         status: streamedResponse.statusCode,
@@ -1459,17 +1453,17 @@ class FastRelayClient {
         details: errorMap?['details'],
         hint: errorMap?['hint']?.toString(),
         docUrl: errorMap?['docUrl']?.toString(),
-        requestId: transformedMap?['requestId']?.toString(),
+        requestId: parsedMap?['requestId']?.toString(),
         path: path,
         method: method,
         rateLimit: rateLimit,
       );
     }
 
-    if (transformedBody == null || transformedBody == '') {
+    if (parsedBody == null || parsedBody == '') {
       return null;
     }
-    return transformedBody;
+    return parsedBody;
   }
 
   FastRelayRateLimit? _getRateLimit(Map<String, String> headers) {

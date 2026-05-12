@@ -553,7 +553,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
       return;
     }
 
-    final normalized = _toStringDynamicMap(toCamelCaseDeep(decoded));
+    final normalized = _toStringDynamicMap(decoded);
     if (normalized.isEmpty) {
       return;
     }

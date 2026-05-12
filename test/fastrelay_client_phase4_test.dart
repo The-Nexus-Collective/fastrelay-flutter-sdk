@@ -32,7 +32,7 @@ http.StreamedResponse jsonResponse(
 void main() {
   group('phase 4 moderation client methods', () {
     test(
-      'moderation.flag posts snake_case payload and parses typed flag',
+      'moderation.flag posts camelCase payload and parses typed flag',
       () async {
         late http.BaseRequest captured;
         final client = FastRelayClient(
@@ -43,13 +43,13 @@ void main() {
             captured = request;
             return jsonResponse({
               'id': 'flag_1',
-              'reporter_id': 'john',
-              'target_type': 'activity',
-              'target_id': 'act_1',
+              'reporterId': 'john',
+              'targetType': 'activity',
+              'targetId': 'act_1',
               'reason': 'spam',
               'description': 'Looks bad',
               'status': 'pending',
-              'created_at': '2026-03-19T10:00:00Z',
+              'createdAt': '2026-03-19T10:00:00Z',
             });
           }),
         );
@@ -71,8 +71,8 @@ void main() {
           'Bearer jwt_123',
         );
         expect(jsonDecode((captured as http.Request).body), {
-          'target_type': 'activity',
-          'target_id': 'act_1',
+          'targetType': 'activity',
+          'targetId': 'act_1',
           'reason': 'spam',
           'description': 'Looks bad',
         });
@@ -96,16 +96,16 @@ void main() {
               'data': [
                 {
                   'id': 'flag_1',
-                  'reporter_id': 'john',
-                  'target_type': 'activity',
-                  'target_id': 'act_1',
+                  'reporterId': 'john',
+                  'targetType': 'activity',
+                  'targetId': 'act_1',
                   'reason': 'spam',
                   'status': 'pending',
-                  'created_at': '2026-03-19T10:00:00Z',
+                  'createdAt': '2026-03-19T10:00:00Z',
                 },
               ],
-              'next_cursor': 'cursor_2',
-              'has_more': true,
+              'nextCursor': 'cursor_2',
+              'hasMore': true,
             });
           }),
         );
@@ -121,7 +121,7 @@ void main() {
         expect(captured.method, 'GET');
         expect(
           captured.url.toString(),
-          'https://api.fastrelay.dev/v1/moderation/flags?status=pending&target_type=activity&target_id=act_1&limit=5&cursor=cursor_1',
+          'https://api.fastrelay.dev/v1/moderation/flags?status=pending&targetType=activity&targetId=act_1&limit=5&cursor=cursor_1',
         );
         expect(
           captured.headers['authorization'],
@@ -145,11 +145,11 @@ void main() {
             captured = request;
             return jsonResponse({
               'id': 'ban_1',
-              'user_id': 'user_bob',
+              'userId': 'user_bob',
               'type': 'shadow',
               'reason': 'abuse',
-              'expires_at': '2026-03-20T10:00:00Z',
-              'created_at': '2026-03-19T10:00:00Z',
+              'expiresAt': '2026-03-20T10:00:00Z',
+              'createdAt': '2026-03-19T10:00:00Z',
             });
           }),
         );
@@ -171,10 +171,10 @@ void main() {
           "Basic ${base64Encode(utf8.encode('public_key:secret_key'))}",
         );
         expect(jsonDecode((captured as http.Request).body), {
-          'user_id': 'user_bob',
+          'userId': 'user_bob',
           'type': 'shadow',
           'reason': 'abuse',
-          'expires_at': '2026-03-20T10:00:00.000Z',
+          'expiresAt': '2026-03-20T10:00:00.000Z',
         });
         expect(ban.userId, 'user_bob');
         expect(ban.type, 'shadow');
@@ -195,13 +195,13 @@ void main() {
               'data': [
                 {
                   'id': 'mut_1',
-                  'muted_user_id': 'user_bob',
+                  'mutedUserId': 'user_bob',
                   'type': 'personal',
-                  'created_at': '2026-03-19T10:00:00Z',
+                  'createdAt': '2026-03-19T10:00:00Z',
                 },
               ],
-              'next_cursor': null,
-              'has_more': false,
+              'nextCursor': null,
+              'hasMore': false,
             });
           }),
         );
@@ -237,9 +237,9 @@ void main() {
               'action': 'flag',
               'matches': [
                 {
-                  'rule_type': 'blocklist',
-                  'rule_id': 'blk_1',
-                  'rule_name': 'Profanity',
+                  'ruleType': 'blocklist',
+                  'ruleId': 'blk_1',
+                  'ruleName': 'Profanity',
                   'behavior': 'flag',
                 },
               ],

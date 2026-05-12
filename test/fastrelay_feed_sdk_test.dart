@@ -19,7 +19,7 @@ http.Response jsonResponse(
 
 void main() {
   test(
-    'feed.addActivity injects feed id and sends snake_case payload',
+    'feed.addActivity injects feed id and sends camelCase payload',
     () async {
       late http.Request captured;
       final fastrelay = FastRelayClient(
@@ -31,7 +31,7 @@ void main() {
           return jsonResponse({
             'id': 'act_1',
             'type': 'post',
-            'user_id': 'john',
+            'userId': 'john',
             'feeds': ['timeline:john'],
           });
         }),
@@ -58,7 +58,7 @@ void main() {
     },
   );
 
-  test('feed.getActivities serializes filter params and mark_read', () async {
+  test('feed.getActivities serializes filter params and markRead', () async {
     late http.Request captured;
     final fastrelay = FastRelayClient(
       apiKey: 'key_123',
@@ -70,8 +70,8 @@ void main() {
           'data': [
             {'id': 'act_1', 'type': 'post'},
           ],
-          'next_cursor': 'cursor_2',
-          'has_more': true,
+          'nextCursor': 'cursor_2',
+          'hasMore': true,
         });
       }),
     );
@@ -90,8 +90,8 @@ void main() {
 
     expect(captured.url.queryParameters['limit'], '10');
     expect(captured.url.queryParameters['cursor'], 'cursor_1');
-    expect(captured.url.queryParameters['mark_seen'], 'true');
-    expect(captured.url.queryParameters['mark_read'], 'act_1,act_2');
+    expect(captured.url.queryParameters['markSeen'], 'true');
+    expect(captured.url.queryParameters['markRead'], 'act_1,act_2');
     expect(captured.url.queryParameters['filter[type]'], 'post');
     expect(captured.url.queryParameters['filter[custom.category]'], 'tech');
 
@@ -99,7 +99,7 @@ void main() {
     expect(page['hasMore'], isTrue);
   });
 
-  test('issueToken uses Basic auth and maps request to snake_case', () async {
+  test('issueToken uses Basic auth and sends camelCase body', () async {
     late http.Request captured;
     final fastrelay = FastRelayClient(
       apiKey: 'public_key',
@@ -126,9 +126,9 @@ void main() {
     );
 
     expect(jsonDecode(captured.body), {
-      'user_id': 'john',
+      'userId': 'john',
       'role': 'user',
-      'expires_in': 3600,
+      'expiresIn': 3600,
     });
   });
 
@@ -141,8 +141,8 @@ void main() {
       httpClient: MockClient((request) async {
         captured = request;
         return jsonResponse({
-          'can_add_activity': true,
-          'can_delete_own_activity': true,
+          'canAddActivity': true,
+          'canDeleteOwnActivity': true,
         });
       }),
     );
@@ -168,7 +168,7 @@ void main() {
       baseUrl: 'https://api.fastrelay.dev',
       httpClient: MockClient((request) async {
         captured = request;
-        return jsonResponse({'can_add_activity': true});
+        return jsonResponse({'canAddActivity': true});
       }),
     );
 
@@ -191,11 +191,11 @@ void main() {
           'error': {
             'code': 'ACTIVITY_NOT_FOUND',
             'message': "Activity with ID 'act_missing' was not found.",
-            'details': {'activity_id': 'act_missing'},
+            'details': {'activityId': 'act_missing'},
             'hint': 'Verify the activity ID is correct.',
-            'doc_url': 'https://docs.fastrelay.dev/errors/ACTIVITY_NOT_FOUND',
+            'docUrl': 'https://docs.fastrelay.dev/errors/ACTIVITY_NOT_FOUND',
           },
-          'request_id': 'req_123',
+          'requestId': 'req_123',
         }, status: 404);
       }),
     );

@@ -90,7 +90,7 @@ String? _parseUserVote(dynamic value) {
   }
   if (value is Map) {
     final map = value.map((key, item) => MapEntry(key.toString(), item));
-    return _parseUserVote(map['optionId'] ?? map['option_id'] ?? map['id']);
+    return _parseUserVote(map['optionId'] ?? map['id']);
   }
   if (value is List && value.isNotEmpty) {
     return _parseUserVote(value.first);
