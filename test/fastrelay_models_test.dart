@@ -45,6 +45,106 @@ void main() {
       expect(page.unseenCount, 3);
       expect(page.unreadCount, 2);
       expect(page.data.first.id, 'act_1');
+      expect(page.groups, isEmpty);
+      expect(page.isAggregated, isFalse);
+    });
+
+    test('NotificationPage parses aggregated groups payload', () {
+      final page = NotificationPage<FastRelayActivity>.fromJson({
+        'groups': [
+          {
+            'groupKey': 'post_2026-02-25',
+            'activityCount': 2,
+            'createdAt': '2026-02-25T09:00:00Z',
+            'updatedAt': '2026-02-25T10:00:00Z',
+            'activities': [
+              {
+                'id': 'act_1',
+                'type': 'post',
+                'userId': 'john',
+                'feeds': ['notifications:john'],
+                'createdAt': '2026-02-25T10:00:00Z',
+                'updatedAt': '2026-02-25T10:00:00Z',
+              },
+              {
+                'id': 'act_2',
+                'type': 'post',
+                'userId': 'mary',
+                'feeds': ['notifications:john'],
+                'createdAt': '2026-02-25T09:00:00Z',
+                'updatedAt': '2026-02-25T09:00:00Z',
+              },
+            ],
+          },
+          {
+            'groupKey': 'comment_2026-02-25',
+            'activityCount': 1,
+            'createdAt': '2026-02-25T08:00:00Z',
+            'updatedAt': '2026-02-25T08:00:00Z',
+            'activities': [
+              {
+                'id': 'act_3',
+                'type': 'comment',
+                'userId': 'bob',
+                'feeds': ['notifications:john'],
+                'createdAt': '2026-02-25T08:00:00Z',
+                'updatedAt': '2026-02-25T08:00:00Z',
+              },
+            ],
+          },
+        ],
+        'unseenCount': 5,
+        'unreadCount': 3,
+      }, FastRelayActivity.fromJson);
+
+      expect(page.isAggregated, isTrue);
+      expect(page.groups, hasLength(2));
+      expect(page.groups.first.groupKey, 'post_2026-02-25');
+      expect(page.groups.first.activityCount, 2);
+      expect(page.groups.first.activities, hasLength(2));
+      expect(
+        page.groups.first.updatedAt,
+        DateTime.parse('2026-02-25T10:00:00Z'),
+      );
+      expect(page.unseenCount, 5);
+      expect(page.unreadCount, 3);
+      expect(page.data.map((a) => a.id), ['act_1', 'act_2', 'act_3']);
+    });
+
+    test('NotificationPage handles empty groups list', () {
+      final page = NotificationPage<FastRelayActivity>.fromJson({
+        'groups': const [],
+        'unseenCount': 0,
+        'unreadCount': 0,
+      }, FastRelayActivity.fromJson);
+
+      expect(page.isAggregated, isFalse);
+      expect(page.groups, isEmpty);
+      expect(page.data, isEmpty);
+    });
+
+    test('NotificationPage handles group with empty activities', () {
+      final page = NotificationPage<FastRelayActivity>.fromJson({
+        'groups': [
+          {'groupKey': 'empty', 'activityCount': 0, 'activities': []},
+        ],
+        'unseenCount': 0,
+        'unreadCount': 0,
+      }, FastRelayActivity.fromJson);
+
+      expect(page.groups, hasLength(1));
+      expect(page.groups.first.activities, isEmpty);
+      expect(page.data, isEmpty);
+    });
+
+    test('NotificationPage throws when both data and groups are missing', () {
+      expect(
+        () => NotificationPage<FastRelayActivity>.fromJson({
+          'unseenCount': 1,
+          'unreadCount': 1,
+        }, FastRelayActivity.fromJson),
+        throwsStateError,
+      );
     });
 
     test('FastRelayActivity parses required and optional fields', () {
