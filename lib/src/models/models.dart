@@ -16,3 +16,4 @@ export 'realtime_event.dart';
 export 'user.dart';
 export 'user_ban.dart';
 export 'user_mute.dart';
+export 'video.dart';

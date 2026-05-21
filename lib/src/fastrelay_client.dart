@@ -43,6 +43,7 @@ class FastRelayClient {
     bookmarks = FastRelayBookmarksApi(this);
     polls = FastRelayPollsApi(this);
     files = FastRelayFilesApi(this);
+    videos = FastRelayVideosApi(this);
     feedback = FastRelayFeedbackApi(this);
     moderation = FastRelayModerationApi(this);
   }
@@ -65,6 +66,7 @@ class FastRelayClient {
   late final FastRelayBookmarksApi bookmarks;
   late final FastRelayPollsApi polls;
   late final FastRelayFilesApi files;
+  late final FastRelayVideosApi videos;
   late final FastRelayFeedbackApi feedback;
   late final FastRelayModerationApi moderation;
 
@@ -920,6 +922,48 @@ class FastRelayClient {
     await _request(
       method: 'DELETE',
       path: '/v1/files/${Uri.encodeComponent(fileId)}',
+      options: options,
+    );
+  }
+
+  Future<FastRelayVideoUploadUrl> createVideoUploadUrl({
+    required String filename,
+    required int sizeBytes,
+    required String mimeType,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/videos/upload-url',
+      body: {
+        'filename': filename,
+        'sizeBytes': sizeBytes,
+        'mimeType': mimeType,
+      },
+      options: options,
+    );
+    return FastRelayVideoUploadUrl.fromJson(_asMap(response));
+  }
+
+  Future<FastRelayVideo> getVideo(
+    String videoId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'GET',
+      path: '/v1/videos/${Uri.encodeComponent(videoId)}',
+      options: options,
+    );
+    return FastRelayVideo.fromJson(_asMap(response));
+  }
+
+  Future<void> deleteVideo(
+    String videoId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    await _request(
+      method: 'DELETE',
+      path: '/v1/videos/${Uri.encodeComponent(videoId)}',
       options: options,
     );
   }
@@ -1832,6 +1876,40 @@ class FastRelayFilesApi {
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     return _client.deleteFile(fileId, options: options);
+  }
+}
+
+class FastRelayVideosApi {
+  const FastRelayVideosApi(this._client);
+
+  final FastRelayClient _client;
+
+  Future<FastRelayVideoUploadUrl> createUploadUrl({
+    required String filename,
+    required int sizeBytes,
+    required String mimeType,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.createVideoUploadUrl(
+      filename: filename,
+      sizeBytes: sizeBytes,
+      mimeType: mimeType,
+      options: options,
+    );
+  }
+
+  Future<FastRelayVideo> get(
+    String videoId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.getVideo(videoId, options: options);
+  }
+
+  Future<void> delete(
+    String videoId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.deleteVideo(videoId, options: options);
   }
 }
 

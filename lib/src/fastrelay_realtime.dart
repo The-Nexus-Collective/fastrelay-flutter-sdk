@@ -9,6 +9,7 @@ import 'package:web_socket_client/web_socket_client.dart' as ws;
 
 import 'fastrelay_client.dart';
 import 'models/realtime_event.dart';
+import 'models/video.dart';
 import 'utils.dart';
 
 typedef FastRelayTokenProvider = Future<String> Function();
@@ -106,6 +107,8 @@ class FastRelayRealtime with WidgetsBindingObserver {
       StreamController<FastRelayConnectionState>.broadcast();
   final StreamController<FastRelayRealtimeError> _errorController =
       StreamController<FastRelayRealtimeError>.broadcast();
+  final StreamController<FastRelayVideoStatusEvent> _videoStatusController =
+      StreamController<FastRelayVideoStatusEvent>.broadcast();
 
   FastRelayRealtimeSocket? _socket;
   StreamSubscription<String>? _messageSubscription;
@@ -138,6 +141,9 @@ class FastRelayRealtime with WidgetsBindingObserver {
       _stateController.stream;
 
   Stream<FastRelayRealtimeError> get errors => _errorController.stream;
+
+  Stream<FastRelayVideoStatusEvent> get videoStatusEvents =>
+      _videoStatusController.stream;
 
   FastRelayConnectionState get connectionState => _connectionState;
 
@@ -222,6 +228,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     await _eventController.close();
     await _stateController.close();
     await _errorController.close();
+    await _videoStatusController.close();
   }
 
   Stream<FastRelayRealtimeEvent> eventsForFeed(String feedId, {String? type}) {
@@ -575,6 +582,10 @@ class FastRelayRealtime with WidgetsBindingObserver {
       case 'error':
         _emitControlError(type, normalized);
         return;
+      case 'video.ready':
+      case 'video.failed':
+        _dispatchVideoStatus(normalized);
+        return;
     }
 
     final event = FastRelayRealtimeEvent.fromJson(normalized);
@@ -587,6 +598,19 @@ class FastRelayRealtime with WidgetsBindingObserver {
     }
 
     _dispatchEvent(event);
+  }
+
+  void _dispatchVideoStatus(Map<String, dynamic> payload) {
+    if (_isDisposed || _videoStatusController.isClosed) {
+      return;
+    }
+
+    final event = FastRelayVideoStatusEvent.fromJson(payload);
+    if (event.videoId.isEmpty) {
+      return;
+    }
+
+    _videoStatusController.add(event);
   }
 
   void _emitControlError(String type, Map<String, dynamic> payload) {
