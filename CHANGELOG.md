@@ -1,3 +1,7 @@
+## 0.4.1
+
+* `FastRelayActivity` now exposes `ownReactions: List<FastRelayReaction>?` — the reactions the requesting user made, embedded directly in feed and single-activity responses. `null` when not enriched (server-side auth), empty list when the user has none. Lets consumers drop the per-activity `listReactions` fan-out on feed load (`1 + N + M` → `1 + N` round-trips).
+
 ## 0.4.0
 
 * Add video upload support. New `FastRelayClient.videos` API (`createUploadUrl`, `get`, `delete`) mints tus upload URLs against `/v1/videos`, and the top-level `uploadVideoBytes()` / `tusUploadBytes()` helpers drive a resumable tus 1.0.0 upload directly to Cloudflare Stream with chunked PATCHes and optional progress callbacks.

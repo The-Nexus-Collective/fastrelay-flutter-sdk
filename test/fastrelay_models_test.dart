@@ -170,6 +170,29 @@ void main() {
       expect(activity.reactionCounts['wow'], 2);
       expect(activity.custom?['category'], 'tech');
       expect(activity.expiresAt, DateTime.parse('2026-02-26T00:00:00Z'));
+      expect(activity.ownReactions, isNull);
+    });
+
+    test('FastRelayActivity parses embedded ownReactions', () {
+      final activity = FastRelayActivity.fromJson({
+        'id': 'act_1',
+        'type': 'post',
+        'userId': 'john',
+        'createdAt': '2026-02-25T10:00:00Z',
+        'updatedAt': '2026-02-25T10:05:00Z',
+        'ownReactions': [
+          {
+            'id': 'rxn_1',
+            'activityId': 'act_1',
+            'userId': 'john',
+            'type': 'like',
+            'createdAt': '2026-02-25T10:01:00Z',
+          },
+        ],
+      });
+
+      expect(activity.ownReactions, hasLength(1));
+      expect(activity.ownReactions!.first.type, 'like');
     });
 
     test('FastRelayPoll parses user vote payload', () {

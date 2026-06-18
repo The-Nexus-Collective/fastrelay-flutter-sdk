@@ -1,3 +1,5 @@
+import 'reaction.dart';
+
 class FastRelayActivity {
   const FastRelayActivity({
     required this.id,
@@ -14,6 +16,7 @@ class FastRelayActivity {
     this.expiresAt,
     required this.createdAt,
     required this.updatedAt,
+    this.ownReactions,
   });
 
   final String id;
@@ -30,6 +33,7 @@ class FastRelayActivity {
   final DateTime? expiresAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<FastRelayReaction>? ownReactions;
 
   factory FastRelayActivity.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now().toUtc();
@@ -50,6 +54,11 @@ class FastRelayActivity {
       expiresAt: _parseDateTime(json['expiresAt']),
       createdAt: _parseDateTime(json['createdAt']) ?? now,
       updatedAt: _parseDateTime(json['updatedAt']) ?? now,
+      ownReactions: json['ownReactions'] == null
+          ? null
+          : (json['ownReactions'] as List)
+                .map((e) => FastRelayReaction.fromJson(_asMap(e)))
+                .toList(),
     );
   }
 
@@ -69,6 +78,7 @@ class FastRelayActivity {
       'expiresAt': expiresAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'ownReactions': ownReactions?.map((r) => r.toJson()).toList(),
     };
   }
 }
