@@ -150,7 +150,8 @@ await fastrelay.removeReaction('act_123', reaction.id);
 
 final comments = await fastrelay.listComments('act_123', limit: 25);
 for (final comment in comments.items) {
-  print('${comment.user.id}: ${comment.text}');
+  // `user` is the embedded author object (null when not enriched)
+  print('${comment.user?.displayName ?? comment.userId}: ${comment.text}');
 }
 
 await fastrelay.addBookmark('act_123');

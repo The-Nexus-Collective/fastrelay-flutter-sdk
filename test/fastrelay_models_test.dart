@@ -195,6 +195,72 @@ void main() {
       expect(activity.ownReactions!.first.type, 'like');
     });
 
+    test('activity, comment, and reaction parse embedded user objects', () {
+      final userJson = {
+        'id': 'john',
+        'displayName': 'John Doe',
+        'profileData': {'avatarUrl': 'https://example.com/a.png'},
+        'role': 'user',
+        'createdAt': '2026-02-25T10:00:00Z',
+        'updatedAt': '2026-02-25T10:00:00Z',
+      };
+
+      final activity = FastRelayActivity.fromJson({
+        'id': 'act_1',
+        'type': 'post',
+        'userId': 'john',
+        'user': userJson,
+        'createdAt': '2026-02-25T10:00:00Z',
+        'updatedAt': '2026-02-25T10:00:00Z',
+      });
+      final comment = FastRelayComment.fromJson({
+        'id': 'cmt_1',
+        'activityId': 'act_1',
+        'userId': 'john',
+        'user': userJson,
+        'text': 'Nice',
+        'createdAt': '2026-02-25T10:00:00Z',
+        'updatedAt': '2026-02-25T10:00:00Z',
+      });
+      final reaction = FastRelayReaction.fromJson({
+        'id': 'rxn_1',
+        'activityId': 'act_1',
+        'userId': 'john',
+        'user': userJson,
+        'type': 'like',
+        'createdAt': '2026-02-25T10:00:00Z',
+      });
+
+      expect(activity.user?.displayName, 'John Doe');
+      expect(
+        activity.user?.profileData?['avatarUrl'],
+        'https://example.com/a.png',
+      );
+      expect(comment.user?.displayName, 'John Doe');
+      expect(reaction.user?.displayName, 'John Doe');
+      expect(activity.toJson()['user'], isNotNull);
+    });
+
+    test('user is null when payload not enriched', () {
+      final activity = FastRelayActivity.fromJson({
+        'id': 'act_1',
+        'type': 'post',
+        'userId': 'john',
+        'createdAt': '2026-02-25T10:00:00Z',
+        'updatedAt': '2026-02-25T10:00:00Z',
+      });
+      final reaction = FastRelayReaction.fromJson({
+        'id': 'rxn_1',
+        'activityId': 'act_1',
+        'userId': 'john',
+        'type': 'like',
+        'createdAt': '2026-02-25T10:00:00Z',
+      });
+
+      expect(activity.user, isNull);
+      expect(reaction.user, isNull);
+    });
+
     test('FastRelayPoll parses user vote payload', () {
       final poll = FastRelayPoll.fromJson({
         'id': 'poll_1',

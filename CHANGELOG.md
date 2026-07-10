@@ -1,3 +1,7 @@
+## 0.4.2
+
+* `FastRelayActivity`, `FastRelayComment`, and `FastRelayReaction` now expose `user: FastRelayUser?` — the author (or reactor) user object embedded by the server on API responses and on `activity.created` / `comment.created` real-time events. `null` when the user has no record or the payload was not enriched. Lets consumers render display names and avatars without a separate `getUser` lookup.
+
 ## 0.4.1
 
 * `FastRelayActivity` now exposes `ownReactions: List<FastRelayReaction>?` — the reactions the requesting user made, embedded directly in feed and single-activity responses. `null` when not enriched (server-side auth), empty list when the user has none. Lets consumers drop the per-activity `listReactions` fan-out on feed load (`1 + N + M` → `1 + N` round-trips).

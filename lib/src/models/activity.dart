@@ -1,4 +1,5 @@
 import 'reaction.dart';
+import 'user.dart';
 
 class FastRelayActivity {
   const FastRelayActivity({
@@ -6,6 +7,7 @@ class FastRelayActivity {
     required this.type,
     this.text,
     required this.userId,
+    this.user,
     this.feeds = const [],
     this.visibility = 'public',
     this.custom,
@@ -23,6 +25,10 @@ class FastRelayActivity {
   final String type;
   final String? text;
   final String userId;
+
+  /// Author user object embedded by the server. `null` when the author has
+  /// no user record or the payload was not enriched.
+  final FastRelayUser? user;
   final List<String> feeds;
   final String visibility;
   final Map<String, dynamic>? custom;
@@ -44,6 +50,9 @@ class FastRelayActivity {
       type: json['type']?.toString() ?? 'post',
       text: json['text']?.toString(),
       userId: json['userId']?.toString() ?? '',
+      user: json['user'] is Map
+          ? FastRelayUser.fromJson(_asMap(json['user']))
+          : null,
       feeds: _asStringList(json['feeds']),
       visibility: json['visibility']?.toString() ?? 'public',
       custom: custom.isEmpty ? null : custom,
@@ -68,6 +77,7 @@ class FastRelayActivity {
       'type': type,
       'text': text,
       'userId': userId,
+      'user': user?.toJson(),
       'feeds': feeds,
       'visibility': visibility,
       'custom': custom,

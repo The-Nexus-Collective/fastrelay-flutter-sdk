@@ -1,8 +1,11 @@
+import 'user.dart';
+
 class FastRelayComment {
   const FastRelayComment({
     required this.id,
     required this.activityId,
     required this.userId,
+    this.user,
     required this.text,
     this.parentId,
     this.mentionedUsers = const [],
@@ -15,6 +18,10 @@ class FastRelayComment {
   final String id;
   final String activityId;
   final String userId;
+
+  /// Author user object embedded by the server. `null` when the author has
+  /// no user record or the payload was not enriched.
+  final FastRelayUser? user;
   final String text;
   final String? parentId;
   final List<String> mentionedUsers;
@@ -35,6 +42,9 @@ class FastRelayComment {
       id: json['id']?.toString() ?? '',
       activityId: json['activityId']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
+      user: json['user'] is Map
+          ? FastRelayUser.fromJson(_asMap(json['user']))
+          : null,
       text: json['text']?.toString() ?? '',
       parentId: json['parentId']?.toString(),
       mentionedUsers: _asStringList(json['mentionedUsers']),
@@ -50,6 +60,7 @@ class FastRelayComment {
       'id': id,
       'activityId': activityId,
       'userId': userId,
+      'user': user?.toJson(),
       'text': text,
       'parentId': parentId,
       'mentionedUsers': mentionedUsers,
