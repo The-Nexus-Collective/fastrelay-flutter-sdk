@@ -26,7 +26,6 @@ class FastRelayRequestOptions {
 class FastRelayClient {
   FastRelayClient({
     required this.apiKey,
-    this.apiSecret,
     this.baseUrl = 'http://localhost:8080',
     this.token,
     Map<String, dynamic>? user,
@@ -35,7 +34,6 @@ class FastRelayClient {
   }) : user = user == null ? null : Map<String, dynamic>.from(user),
        _httpClient = httpClient ?? http.Client(),
        _realtimeFactory = realtimeFactory ?? FastRelayRealtime.new {
-    tokens = FastRelayTokensApi(this);
     capabilities = FastRelayCapabilitiesApi(this);
     activities = FastRelayActivitiesApi(this);
     reactions = FastRelayReactionsApi(this);
@@ -52,13 +50,11 @@ class FastRelayClient {
   final FastRelayRealtimeFactory _realtimeFactory;
 
   String apiKey;
-  String? apiSecret;
   String baseUrl;
   String? token;
   Map<String, dynamic>? user;
   FastRelayRealtime? realtime;
 
-  late final FastRelayTokensApi tokens;
   late final FastRelayCapabilitiesApi capabilities;
   late final FastRelayActivitiesApi activities;
   late final FastRelayReactionsApi reactions;
@@ -92,12 +88,17 @@ class FastRelayClient {
     this.token = token;
 
     if (upsertUser) {
-      await createUser({
-        'id': userId,
-        'displayName': user['displayName'] ?? user['name'],
-        'profileData': user['profileData'] ?? user['data'],
-        if (user['role'] != null) 'role': user['role'],
-      });
+      await _request(
+        method: 'POST',
+        path: '/v1/users',
+        body: {
+          'id': userId,
+          'displayName': user['displayName'] ?? user['name'],
+          'profileData': user['profileData'] ?? user['data'],
+          if (user['role'] != null) 'role': user['role'],
+        },
+        options: const FastRelayRequestOptions(),
+      );
     }
 
     final existingRealtime = this.realtime;
@@ -144,12 +145,6 @@ class FastRelayClient {
     return this;
   }
 
-  FastRelayClient setServerAuth(String apiKey, String apiSecret) {
-    this.apiKey = apiKey;
-    this.apiSecret = apiSecret;
-    return this;
-  }
-
   void close() {
     final existingRealtime = realtime;
     if (existingRealtime != null) {
@@ -157,20 +152,6 @@ class FastRelayClient {
       realtime = null;
     }
     _httpClient.close();
-  }
-
-  Future<dynamic> issueToken(
-    Map<String, dynamic> request, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _request(
-      method: 'POST',
-      path: '/v1/tokens',
-      body: request,
-      options: options,
-    );
   }
 
   Future<dynamic> getCapabilities({
@@ -181,18 +162,6 @@ class FastRelayClient {
       method: 'GET',
       path: '/v1/me/capabilities',
       query: {'feed': query['feed']},
-      options: options,
-    );
-  }
-
-  Future<dynamic> createUser(
-    Map<String, dynamic> request, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
-  }) {
-    return _request(
-      method: 'POST',
-      path: '/v1/users',
-      body: request,
       options: options,
     );
   }
@@ -217,29 +186,6 @@ class FastRelayClient {
       method: 'PATCH',
       path: '/v1/users/${Uri.encodeComponent(id)}',
       body: request,
-      options: options,
-    );
-  }
-
-  Future<dynamic> deleteUser(
-    String id, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
-  }) {
-    return _request(
-      method: 'DELETE',
-      path: '/v1/users/${Uri.encodeComponent(id)}',
-      options: options,
-    );
-  }
-
-  Future<dynamic> listUsers({
-    Map<String, dynamic>? query,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
-  }) {
-    return _request(
-      method: 'GET',
-      path: '/v1/users',
-      query: {'limit': query?['limit'], 'cursor': query?['cursor']},
       options: options,
     );
   }
@@ -1018,122 +964,6 @@ class FastRelayClient {
     );
   }
 
-  Future<CursorPage<FastRelayModerationFlag>> listFlags({
-    String? status,
-    String? reason,
-    String? targetType,
-    String? targetId,
-    int? limit,
-    String? cursor,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'GET',
-      path: '/v1/moderation/flags',
-      query: {
-        'status': status,
-        'reason': reason,
-        'targetType': targetType,
-        'targetId': targetId,
-        'limit': limit,
-        'cursor': cursor,
-      },
-      options: options,
-    );
-    return CursorPage<FastRelayModerationFlag>.fromJson(
-      _asMap(response),
-      FastRelayModerationFlag.fromJson,
-    );
-  }
-
-  Future<FastRelayModerationFlag> reviewFlag(
-    String flagId, {
-    required String status,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'PATCH',
-      path: '/v1/moderation/flags/${Uri.encodeComponent(flagId)}/review',
-      body: {'status': status},
-      options: options,
-    );
-    return FastRelayModerationFlag.fromJson(_asMap(response));
-  }
-
-  Future<FastRelayUserBan> createBan(
-    String userId, {
-    String type = 'hard',
-    String? reason,
-    DateTime? expiresAt,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'POST',
-      path: '/v1/moderation/bans',
-      body: {
-        'userId': userId,
-        'type': type,
-        if (reason != null) 'reason': reason,
-        if (expiresAt != null) 'expiresAt': expiresAt.toIso8601String(),
-      },
-      options: options,
-    );
-    return FastRelayUserBan.fromJson(_asMap(response));
-  }
-
-  Future<void> removeBan(
-    String userId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    await _request(
-      method: 'DELETE',
-      path: '/v1/moderation/bans/${Uri.encodeComponent(userId)}',
-      options: options,
-    );
-  }
-
-  Future<FastRelayUserBan> getBan(
-    String userId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'GET',
-      path: '/v1/moderation/bans/${Uri.encodeComponent(userId)}',
-      options: options,
-    );
-    return FastRelayUserBan.fromJson(_asMap(response));
-  }
-
-  Future<CursorPage<FastRelayUserBan>> listBans({
-    String? type,
-    int? limit,
-    String? cursor,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'GET',
-      path: '/v1/moderation/bans',
-      query: {'type': type, 'limit': limit, 'cursor': cursor},
-      options: options,
-    );
-    return CursorPage<FastRelayUserBan>.fromJson(
-      _asMap(response),
-      FastRelayUserBan.fromJson,
-    );
-  }
-
   Future<FastRelayUserMute> createMute(
     String userId, {
     String type = 'personal',
@@ -1196,191 +1026,6 @@ class FastRelayClient {
       cursor: cursor,
       options: options,
     );
-  }
-
-  Future<FastRelayBlocklist> createBlocklist({
-    required String name,
-    required List<String> words,
-    String behavior = 'flag',
-    bool active = true,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'POST',
-      path: '/v1/moderation/blocklists',
-      body: {
-        'name': name,
-        'words': words,
-        'behavior': behavior,
-        'active': active,
-      },
-      options: options,
-    );
-    return FastRelayBlocklist.fromJson(_asMap(response));
-  }
-
-  Future<CursorPage<FastRelayBlocklist>> listBlocklists({
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'GET',
-      path: '/v1/moderation/blocklists',
-      options: options,
-    );
-    return CursorPage<FastRelayBlocklist>.fromJson(
-      _asMap(response),
-      FastRelayBlocklist.fromJson,
-    );
-  }
-
-  Future<FastRelayBlocklist> getBlocklist(
-    String id, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'GET',
-      path: '/v1/moderation/blocklists/${Uri.encodeComponent(id)}',
-      options: options,
-    );
-    return FastRelayBlocklist.fromJson(_asMap(response));
-  }
-
-  Future<FastRelayBlocklist> updateBlocklist(
-    String id, {
-    String? name,
-    List<String>? words,
-    String? behavior,
-    bool? active,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'PATCH',
-      path: '/v1/moderation/blocklists/${Uri.encodeComponent(id)}',
-      body: {
-        if (name != null) 'name': name,
-        if (words != null) 'words': words,
-        if (behavior != null) 'behavior': behavior,
-        if (active != null) 'active': active,
-      },
-      options: options,
-    );
-    return FastRelayBlocklist.fromJson(_asMap(response));
-  }
-
-  Future<void> deleteBlocklist(
-    String id, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    await _request(
-      method: 'DELETE',
-      path: '/v1/moderation/blocklists/${Uri.encodeComponent(id)}',
-      options: options,
-    );
-  }
-
-  Future<FastRelayRegexFilter> createRegexFilter({
-    required String name,
-    required String pattern,
-    String behavior = 'flag',
-    bool active = true,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'POST',
-      path: '/v1/moderation/regex-filters',
-      body: {
-        'name': name,
-        'pattern': pattern,
-        'behavior': behavior,
-        'active': active,
-      },
-      options: options,
-    );
-    return FastRelayRegexFilter.fromJson(_asMap(response));
-  }
-
-  Future<CursorPage<FastRelayRegexFilter>> listRegexFilters({
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'GET',
-      path: '/v1/moderation/regex-filters',
-      options: options,
-    );
-    return CursorPage<FastRelayRegexFilter>.fromJson(
-      _asMap(response),
-      FastRelayRegexFilter.fromJson,
-    );
-  }
-
-  Future<FastRelayRegexFilter> updateRegexFilter(
-    String id, {
-    String? name,
-    String? pattern,
-    String? behavior,
-    bool? active,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'PATCH',
-      path: '/v1/moderation/regex-filters/${Uri.encodeComponent(id)}',
-      body: {
-        if (name != null) 'name': name,
-        if (pattern != null) 'pattern': pattern,
-        if (behavior != null) 'behavior': behavior,
-        if (active != null) 'active': active,
-      },
-      options: options,
-    );
-    return FastRelayRegexFilter.fromJson(_asMap(response));
-  }
-
-  Future<void> deleteRegexFilter(
-    String id, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    await _request(
-      method: 'DELETE',
-      path: '/v1/moderation/regex-filters/${Uri.encodeComponent(id)}',
-      options: options,
-    );
-  }
-
-  Future<FastRelayContentCheck> checkContent({
-    String? text,
-    Object? custom,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) async {
-    final response = await _request(
-      method: 'POST',
-      path: '/v1/moderation/check',
-      body: {
-        if (text != null) 'text': text,
-        if (custom != null) 'custom': custom,
-      },
-      options: options,
-    );
-    return FastRelayContentCheck.fromJson(_asMap(response));
   }
 
   Future<dynamic> _multipartRequest({
@@ -1540,12 +1185,10 @@ class FastRelayClient {
       case FastRelayAuthMode.none:
         return null;
       case FastRelayAuthMode.server:
-        if (apiSecret == null || apiSecret!.isEmpty) {
-          throw StateError(
-            'This request requires server auth. Initialize FastRelayClient with apiSecret.',
-          );
-        }
-        return 'Basic ${encodeBasicAuth(apiKey, apiSecret!)}';
+        throw StateError(
+          'Server auth is not supported: this SDK is client-only. '
+          'Call server endpoints from your backend.',
+        );
       case FastRelayAuthMode.user:
         if (token == null || token!.isEmpty) {
           throw StateError(
@@ -1556,9 +1199,6 @@ class FastRelayClient {
       case FastRelayAuthMode.auto:
         if (token != null && token!.isNotEmpty) {
           return 'Bearer $token';
-        }
-        if (apiSecret != null && apiSecret!.isNotEmpty) {
-          return 'Basic ${encodeBasicAuth(apiKey, apiSecret!)}';
         }
         return null;
     }
@@ -1572,21 +1212,6 @@ class FastRelayClient {
       return value.map((key, item) => MapEntry(key.toString(), item));
     }
     return const {};
-  }
-}
-
-class FastRelayTokensApi {
-  const FastRelayTokensApi(this._client);
-
-  final FastRelayClient _client;
-
-  Future<dynamic> issue(
-    Map<String, dynamic> request, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.issueToken(request, options: options);
   }
 }
 
@@ -1928,15 +1553,9 @@ class FastRelayFeedbackApi {
 }
 
 class FastRelayModerationApi {
-  FastRelayModerationApi(this._client)
-    : flags = FastRelayModerationFlagsApi(_client),
-      blocklists = FastRelayModerationBlocklistsApi(_client),
-      regexFilters = FastRelayModerationRegexFiltersApi(_client);
+  const FastRelayModerationApi(this._client);
 
   final FastRelayClient _client;
-  final FastRelayModerationFlagsApi flags;
-  final FastRelayModerationBlocklistsApi blocklists;
-  final FastRelayModerationRegexFiltersApi regexFilters;
 
   Future<FastRelayModerationFlag> flag(
     String targetType,
@@ -1995,236 +1614,5 @@ class FastRelayModerationApi {
       cursor: cursor,
       options: options,
     );
-  }
-
-  Future<FastRelayUserBan> ban(
-    String userId, {
-    String type = 'hard',
-    String? reason,
-    DateTime? expiresAt,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.createBan(
-      userId,
-      type: type,
-      reason: reason,
-      expiresAt: expiresAt,
-      options: options,
-    );
-  }
-
-  Future<void> unban(
-    String userId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.removeBan(userId, options: options);
-  }
-
-  Future<FastRelayUserBan> getBanStatus(
-    String userId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.getBan(userId, options: options);
-  }
-
-  Future<CursorPage<FastRelayUserBan>> listBans({
-    String? type,
-    int? limit,
-    String? cursor,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.listBans(
-      type: type,
-      limit: limit,
-      cursor: cursor,
-      options: options,
-    );
-  }
-
-  Future<FastRelayContentCheck> check({
-    String? text,
-    Object? custom,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.checkContent(text: text, custom: custom, options: options);
-  }
-}
-
-class FastRelayModerationFlagsApi {
-  const FastRelayModerationFlagsApi(this._client);
-
-  final FastRelayClient _client;
-
-  Future<CursorPage<FastRelayModerationFlag>> list({
-    String? status,
-    String? reason,
-    String? targetType,
-    String? targetId,
-    int? limit,
-    String? cursor,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.listFlags(
-      status: status,
-      reason: reason,
-      targetType: targetType,
-      targetId: targetId,
-      limit: limit,
-      cursor: cursor,
-      options: options,
-    );
-  }
-
-  Future<FastRelayModerationFlag> review(
-    String flagId, {
-    required String status,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.reviewFlag(flagId, status: status, options: options);
-  }
-}
-
-class FastRelayModerationBlocklistsApi {
-  const FastRelayModerationBlocklistsApi(this._client);
-
-  final FastRelayClient _client;
-
-  Future<FastRelayBlocklist> create({
-    required String name,
-    required List<String> words,
-    String behavior = 'flag',
-    bool active = true,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.createBlocklist(
-      name: name,
-      words: words,
-      behavior: behavior,
-      active: active,
-      options: options,
-    );
-  }
-
-  Future<CursorPage<FastRelayBlocklist>> list({
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.listBlocklists(options: options);
-  }
-
-  Future<FastRelayBlocklist> get(
-    String id, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.getBlocklist(id, options: options);
-  }
-
-  Future<FastRelayBlocklist> update(
-    String id, {
-    String? name,
-    List<String>? words,
-    String? behavior,
-    bool? active,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.updateBlocklist(
-      id,
-      name: name,
-      words: words,
-      behavior: behavior,
-      active: active,
-      options: options,
-    );
-  }
-
-  Future<void> delete(
-    String id, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.deleteBlocklist(id, options: options);
-  }
-}
-
-class FastRelayModerationRegexFiltersApi {
-  const FastRelayModerationRegexFiltersApi(this._client);
-
-  final FastRelayClient _client;
-
-  Future<FastRelayRegexFilter> create({
-    required String name,
-    required String pattern,
-    String behavior = 'flag',
-    bool active = true,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.createRegexFilter(
-      name: name,
-      pattern: pattern,
-      behavior: behavior,
-      active: active,
-      options: options,
-    );
-  }
-
-  Future<CursorPage<FastRelayRegexFilter>> list({
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.listRegexFilters(options: options);
-  }
-
-  Future<FastRelayRegexFilter> update(
-    String id, {
-    String? name,
-    String? pattern,
-    String? behavior,
-    bool? active,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.updateRegexFilter(
-      id,
-      name: name,
-      pattern: pattern,
-      behavior: behavior,
-      active: active,
-      options: options,
-    );
-  }
-
-  Future<void> delete(
-    String id, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(
-      auth: FastRelayAuthMode.server,
-    ),
-  }) {
-    return _client.deleteRegexFilter(id, options: options);
   }
 }

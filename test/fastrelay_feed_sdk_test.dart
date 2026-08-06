@@ -99,37 +99,20 @@ void main() {
     expect(page['hasMore'], isTrue);
   });
 
-  test('issueToken uses Basic auth and sends camelCase body', () async {
+  test('requests without a token are sent unauthenticated', () async {
     late http.Request captured;
     final fastrelay = FastRelayClient(
       apiKey: 'public_key',
-      apiSecret: 'secret_key',
       baseUrl: 'https://api.fastrelay.dev',
       httpClient: MockClient((request) async {
         captured = request;
-        return jsonResponse({'token': 'jwt_issued'});
+        return jsonResponse({'id': 'john'});
       }),
     );
 
-    final response = await fastrelay.issueToken({
-      'userId': 'john',
-      'role': 'user',
-      'expiresIn': 3600,
-    });
+    await fastrelay.getUser('john');
 
-    expect(response['token'], 'jwt_issued');
-    expect(captured.url.toString(), 'https://api.fastrelay.dev/v1/tokens');
-    expect(captured.method, 'POST');
-    expect(
-      captured.headers['authorization'],
-      'Basic ${base64Encode(utf8.encode('public_key:secret_key'))}',
-    );
-
-    expect(jsonDecode(captured.body), {
-      'userId': 'john',
-      'role': 'user',
-      'expiresIn': 3600,
-    });
+    expect(captured.headers.containsKey('authorization'), isFalse);
   });
 
   test('capabilities namespace fetches capability payload', () async {
@@ -219,5 +202,53 @@ void main() {
             ),
       ),
     );
+  });
+
+  test('connectUser with upsertUser self-upserts via POST /v1/users', () async {
+    final requests = <http.Request>[];
+    final fastrelay = FastRelayClient(
+      apiKey: 'key_123',
+      baseUrl: 'https://api.fastrelay.dev',
+      httpClient: MockClient((request) async {
+        requests.add(request);
+        return jsonResponse({'id': 'john'});
+      }),
+    );
+
+    await fastrelay.connectUser(
+      {
+        'id': 'john',
+        'displayName': 'John',
+        'profileData': {'language': 'en'},
+      },
+      'jwt_123',
+      upsertUser: true,
+    );
+
+    expect(requests, hasLength(1));
+    final captured = requests.single;
+    expect(captured.method, 'POST');
+    expect(captured.url.toString(), 'https://api.fastrelay.dev/v1/users');
+    expect(captured.headers['authorization'], 'Bearer jwt_123');
+    expect(jsonDecode(captured.body), {
+      'id': 'john',
+      'displayName': 'John',
+      'profileData': {'language': 'en'},
+    });
+  });
+
+  test('connectUser without upsertUser makes no requests', () async {
+    final requests = <http.Request>[];
+    final fastrelay = FastRelayClient(
+      apiKey: 'key_123',
+      httpClient: MockClient((request) async {
+        requests.add(request);
+        return jsonResponse({});
+      }),
+    );
+
+    await fastrelay.connectUser({'id': 'john'}, 'jwt_123');
+
+    expect(requests, isEmpty);
   });
 }

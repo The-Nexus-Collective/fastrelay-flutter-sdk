@@ -3,7 +3,7 @@
 Flutter SDK for [fastrelay](https://fastrelay.io) activity feeds — feeds, activities, reactions, comments, polls, video uploads, moderation, and realtime updates over WebSocket.
 
 - Feed-first API: `fastrelay.feed(group, id)`
-- User (JWT) and server (API key + secret) auth
+- Client-only by design: user (JWT) auth, no server secrets in the app
 - Idiomatic Dart `camelCase` payloads
 - Realtime subscriptions with automatic reconnect + token refresh
 - Polling fallback for non-realtime environments
@@ -39,7 +39,7 @@ dependencies:
   fastrelay_feed_sdk:
     git:
       url: https://github.com/The-Nexus-Collective/fastrelay-flutter-sdk
-      ref: v0.4.0
+      ref: v0.5.0
 ```
 
 Then:
@@ -93,30 +93,22 @@ await fastrelay.connectUser(
   },
   'user_jwt_token',
   upsertUser: true, // create or update the user on fastrelay
-  realtime: true,   // also open the websocket
+  realtime: true, // also open the websocket
   tokenProvider: () async => fetchFreshJwtFromBackend(),
 );
 ```
 
 `tokenProvider` is called transparently when the realtime channel receives a `4003 TOKEN_EXPIRED` close — no manual reconnect needed.
 
-### Server auth (backend / scripts)
+### Client-only by design
 
-```dart
-final fastrelay = fastrelayClient(
-  apiKey: 'your_api_key',
-  apiSecret: 'your_api_secret',
-  baseUrl: 'https://api.fastrelay.io',
-);
-
-final token = await fastrelay.tokens.issue({
-  'userId': 'john',
-  'role': 'user',
-  'expiresIn': 3600,
-});
-```
-
-Server-only endpoints (token issuance, moderation admin, bans, blocklists, …) require `apiSecret` and are gated by `fastrelayAuthMode.server`.
+This SDK covers the client-side API only and authenticates with a user JWT.
+Server-to-server operations — issuing tokens (`POST /v1/tokens`), managing
+other users, feed groups, and moderation administration (bans, blocklists,
+regex filters, flag review, content checks) — require the API secret and must
+be called from your backend, never from an app. Your backend issues the user
+JWT and hands it to `connectUser`; `upsertUser: true` then creates or updates
+the connecting user's own record with that JWT.
 
 ## Feeds
 
