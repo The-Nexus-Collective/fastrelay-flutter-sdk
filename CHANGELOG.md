@@ -1,3 +1,7 @@
+## 0.5.0
+
+* **Breaking:** the SDK is now client-only. Removed all server-to-server surfaces: `apiSecret` / Basic auth, `setServerAuth`, `issueToken` / `tokens.issue`, `createUser` / `deleteUser` / `listUsers`, and moderation administration (`listFlags`, `reviewFlag`, bans, blocklists, regex filters, `checkContent`) along with their models (`FastRelayUserBan`, `FastRelayBlocklist`, `FastRelayRegexFilter`, `FastRelayContentCheck`). Requests authenticate with the user JWT only; `FastRelayAuthMode.server` now throws `StateError`. Call server endpoints from your backend and hand the issued JWT to `connectUser`. The `upsertUser` option on `connectUser` is kept: it self-upserts the connecting user via `POST /v1/users` with the user's own JWT.
+
 ## 0.4.2
 
 * `FastRelayActivity`, `FastRelayComment`, and `FastRelayReaction` now expose `user: FastRelayUser?` — the author (or reactor) user object embedded by the server on API responses and on `activity.created` / `comment.created` real-time events. `null` when the user has no record or the payload was not enriched. Lets consumers render display names and avatars without a separate `getUser` lookup.

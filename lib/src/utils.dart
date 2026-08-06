@@ -81,10 +81,6 @@ Map<String, dynamic> buildFeedActivityQuery([Map<String, dynamic>? options]) {
   return query;
 }
 
-String encodeBasicAuth(String username, String password) {
-  return base64Encode(utf8.encode('$username:$password'));
-}
-
 String resolveFeedTarget(Object? target) {
   if (target is String && target.isNotEmpty) {
     return target;

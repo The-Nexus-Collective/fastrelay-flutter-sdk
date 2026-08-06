@@ -83,105 +83,6 @@ void main() {
     );
 
     test(
-      'moderation.flags.list serializes filters and parses cursor page',
-      () async {
-        late http.BaseRequest captured;
-        final client = FastRelayClient(
-          apiKey: 'public_key',
-          apiSecret: 'secret_key',
-          baseUrl: 'https://api.fastrelay.dev',
-          httpClient: CaptureClient((request) async {
-            captured = request;
-            return jsonResponse({
-              'data': [
-                {
-                  'id': 'flag_1',
-                  'reporterId': 'john',
-                  'targetType': 'activity',
-                  'targetId': 'act_1',
-                  'reason': 'spam',
-                  'status': 'pending',
-                  'createdAt': '2026-03-19T10:00:00Z',
-                },
-              ],
-              'nextCursor': 'cursor_2',
-              'hasMore': true,
-            });
-          }),
-        );
-
-        final page = await client.moderation.flags.list(
-          status: 'pending',
-          targetType: 'activity',
-          targetId: 'act_1',
-          limit: 5,
-          cursor: 'cursor_1',
-        );
-
-        expect(captured.method, 'GET');
-        expect(
-          captured.url.toString(),
-          'https://api.fastrelay.dev/v1/moderation/flags?status=pending&targetType=activity&targetId=act_1&limit=5&cursor=cursor_1',
-        );
-        expect(
-          captured.headers['authorization'],
-          "Basic ${base64Encode(utf8.encode('public_key:secret_key'))}",
-        );
-        expect(page.nextCursor, 'cursor_2');
-        expect(page.hasMore, isTrue);
-        expect(page.data.first.targetId, 'act_1');
-      },
-    );
-
-    test(
-      'moderation.ban uses server auth by default and parses typed ban',
-      () async {
-        late http.BaseRequest captured;
-        final client = FastRelayClient(
-          apiKey: 'public_key',
-          apiSecret: 'secret_key',
-          baseUrl: 'https://api.fastrelay.dev',
-          httpClient: CaptureClient((request) async {
-            captured = request;
-            return jsonResponse({
-              'id': 'ban_1',
-              'userId': 'user_bob',
-              'type': 'shadow',
-              'reason': 'abuse',
-              'expiresAt': '2026-03-20T10:00:00Z',
-              'createdAt': '2026-03-19T10:00:00Z',
-            });
-          }),
-        );
-
-        final ban = await client.moderation.ban(
-          'user_bob',
-          type: 'shadow',
-          reason: 'abuse',
-          expiresAt: DateTime.parse('2026-03-20T10:00:00Z'),
-        );
-
-        expect(captured.method, 'POST');
-        expect(
-          captured.url.toString(),
-          'https://api.fastrelay.dev/v1/moderation/bans',
-        );
-        expect(
-          captured.headers['authorization'],
-          "Basic ${base64Encode(utf8.encode('public_key:secret_key'))}",
-        );
-        expect(jsonDecode((captured as http.Request).body), {
-          'userId': 'user_bob',
-          'type': 'shadow',
-          'reason': 'abuse',
-          'expiresAt': '2026-03-20T10:00:00.000Z',
-        });
-        expect(ban.userId, 'user_bob');
-        expect(ban.type, 'shadow');
-      },
-    );
-
-    test(
       'moderation.getMutedUsers serializes query and parses typed mutes',
       () async {
         late http.BaseRequest captured;
@@ -223,56 +124,28 @@ void main() {
       },
     );
 
-    test(
-      'moderation.check uses server auth and parses typed check response',
-      () async {
-        late http.BaseRequest captured;
-        final client = FastRelayClient(
-          apiKey: 'public_key',
-          apiSecret: 'secret_key',
-          baseUrl: 'https://api.fastrelay.dev',
-          httpClient: CaptureClient((request) async {
-            captured = request;
-            return jsonResponse({
-              'action': 'flag',
-              'matches': [
-                {
-                  'ruleType': 'blocklist',
-                  'ruleId': 'blk_1',
-                  'ruleName': 'Profanity',
-                  'behavior': 'flag',
-                },
-              ],
-            });
-          }),
-        );
+    test('server auth mode is rejected in the client-only SDK', () async {
+      final client = FastRelayClient(
+        apiKey: 'public_key',
+        baseUrl: 'https://api.fastrelay.dev',
+        httpClient: CaptureClient((request) async => jsonResponse({})),
+      );
 
-        final result = await client.moderation.check(
-          text: 'suspicious text',
-          custom: {
-            'details': {'lang': 'en'},
-          },
-        );
-
-        expect(captured.method, 'POST');
-        expect(
-          captured.url.toString(),
-          'https://api.fastrelay.dev/v1/moderation/check',
-        );
-        expect(
-          captured.headers['authorization'],
-          "Basic ${base64Encode(utf8.encode('public_key:secret_key'))}",
-        );
-        expect(jsonDecode((captured as http.Request).body), {
-          'text': 'suspicious text',
-          'custom': {
-            'details': {'lang': 'en'},
-          },
-        });
-        expect(result.action, 'flag');
-        expect(result.matches, hasLength(1));
-        expect(result.matches.first.ruleId, 'blk_1');
-      },
-    );
+      expect(
+        () => client.getUser(
+          'john',
+          options: const FastRelayRequestOptions(
+            auth: FastRelayAuthMode.server,
+          ),
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('client-only'),
+          ),
+        ),
+      );
+    });
   });
 }
