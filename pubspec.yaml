@@ -1,6 +1,6 @@
 name: fastrelay_feed_sdk
 description: "Flutter SDK for FastRelay feed APIs."
-version: 0.5.0
+version: 0.5.1
 homepage: https://github.com/The-Nexus-Collective/fastrelay-flutter-sdk
 
 environment:

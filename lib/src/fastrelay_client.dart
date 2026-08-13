@@ -590,6 +590,7 @@ class FastRelayClient {
     required String text,
     String? parentId,
     List<String>? mentionedUsers,
+    Map<String, dynamic>? custom,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) async {
     final response = await _request(
@@ -599,6 +600,7 @@ class FastRelayClient {
         'text': text,
         if (parentId != null) 'parentId': parentId,
         if (mentionedUsers != null) 'mentionedUsers': mentionedUsers,
+        if (custom != null) 'custom': custom,
       },
       options: options,
     );

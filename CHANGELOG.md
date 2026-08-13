@@ -1,3 +1,7 @@
+## 0.5.1
+
+* `FastRelayComment` now exposes `custom: Map<String, dynamic>?` — arbitrary custom payload attached by the server (e.g. attachments), parsed from and serialized to JSON, `null` when absent. `FastRelayClient.addComment` accepts a matching optional `custom` parameter.
+
 ## 0.5.0
 
 * **Breaking:** the SDK is now client-only. Removed all server-to-server surfaces: `apiSecret` / Basic auth, `setServerAuth`, `issueToken` / `tokens.issue`, `createUser` / `deleteUser` / `listUsers`, and moderation administration (`listFlags`, `reviewFlag`, bans, blocklists, regex filters, `checkContent`) along with their models (`FastRelayUserBan`, `FastRelayBlocklist`, `FastRelayRegexFilter`, `FastRelayContentCheck`). Requests authenticate with the user JWT only; `FastRelayAuthMode.server` now throws `StateError`. Call server endpoints from your backend and hand the issued JWT to `connectUser`. The `upsertUser` option on `connectUser` is kept: it self-upserts the connecting user via `POST /v1/users` with the user's own JWT.

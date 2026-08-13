@@ -10,6 +10,7 @@ class FastRelayComment {
     this.parentId,
     this.mentionedUsers = const [],
     this.reactionCounts = const {},
+    this.custom,
     this.score = 0,
     required this.createdAt,
     required this.updatedAt,
@@ -26,6 +27,9 @@ class FastRelayComment {
   final String? parentId;
   final List<String> mentionedUsers;
   final Map<String, int> reactionCounts;
+
+  /// Arbitrary custom payload attached by the server (e.g. attachments).
+  final Map<String, dynamic>? custom;
   final double score;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -37,6 +41,7 @@ class FastRelayComment {
     final reactionCounts = _asMap(
       json['reactionCounts'],
     ).map((key, value) => MapEntry(key, _readInt(value) ?? 0));
+    final custom = _asMap(json['custom']);
 
     return FastRelayComment(
       id: json['id']?.toString() ?? '',
@@ -49,6 +54,7 @@ class FastRelayComment {
       parentId: json['parentId']?.toString(),
       mentionedUsers: _asStringList(json['mentionedUsers']),
       reactionCounts: reactionCounts,
+      custom: custom.isEmpty ? null : custom,
       score: _readDouble(json['score']) ?? 0,
       createdAt: _parseDateTime(json['createdAt']) ?? now,
       updatedAt: _parseDateTime(json['updatedAt']) ?? now,
@@ -65,6 +71,7 @@ class FastRelayComment {
       'parentId': parentId,
       'mentionedUsers': mentionedUsers,
       'reactionCounts': reactionCounts,
+      'custom': custom,
       'score': score,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),

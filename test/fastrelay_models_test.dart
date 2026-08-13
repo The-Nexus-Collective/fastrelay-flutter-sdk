@@ -241,6 +241,43 @@ void main() {
       expect(activity.toJson()['user'], isNotNull);
     });
 
+    test('comment parses custom payload with attachments', () {
+      final comment = FastRelayComment.fromJson({
+        'id': 'cmt_1',
+        'activityId': 'act_1',
+        'userId': 'john',
+        'text': '',
+        'custom': {
+          'attachments': [
+            {'type': 'image', 'imageUrl': 'https://example.com/img.jpg'},
+          ],
+        },
+        'createdAt': '2026-02-25T10:00:00Z',
+        'updatedAt': '2026-02-25T10:00:00Z',
+      });
+
+      final attachments = comment.custom?['attachments'] as List?;
+      expect(attachments, hasLength(1));
+      expect(
+        (attachments?.first as Map)['imageUrl'],
+        'https://example.com/img.jpg',
+      );
+      expect(comment.toJson()['custom'], isNotNull);
+    });
+
+    test('comment custom is null when absent', () {
+      final comment = FastRelayComment.fromJson({
+        'id': 'cmt_1',
+        'activityId': 'act_1',
+        'userId': 'john',
+        'text': 'Nice',
+        'createdAt': '2026-02-25T10:00:00Z',
+        'updatedAt': '2026-02-25T10:00:00Z',
+      });
+
+      expect(comment.custom, isNull);
+    });
+
     test('user is null when payload not enriched', () {
       final activity = FastRelayActivity.fromJson({
         'id': 'act_1',
