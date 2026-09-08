@@ -38,7 +38,7 @@ void main() {
         final client = FastRelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
-          baseUrl: 'https://api.fastrelay.dev',
+          baseUrl: 'https://api.fastrelay.io',
           httpClient: CaptureClient((request) async {
             captured = request;
             return jsonResponse({
@@ -56,7 +56,7 @@ void main() {
         expect(captured.method, 'POST');
         expect(
           captured.url.toString(),
-          'https://api.fastrelay.dev/v1/activities/act_1/reactions',
+          'https://api.fastrelay.io/v1/activities/act_1/reactions',
         );
         expect(
           (captured as http.Request).headers['authorization'],
@@ -74,7 +74,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((request) async {
           captured = request;
           return jsonResponse({
@@ -118,7 +118,7 @@ void main() {
         final client = FastRelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
-          baseUrl: 'https://api.fastrelay.dev',
+          baseUrl: 'https://api.fastrelay.io',
           httpClient: CaptureClient((request) async {
             requestCount += 1;
             if (requestCount == 1) {
@@ -187,7 +187,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((request) async {
           paths.add(request.url.path);
           if (request.method == 'POST') {
@@ -220,7 +220,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((request) async {
           requestCount += 1;
           if (requestCount == 1) {
@@ -258,7 +258,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((request) async {
           requests.add(request);
           if (request.url.path.endsWith('/votes')) {
@@ -317,12 +317,12 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((request) async {
           captured = request;
           return jsonResponse({
             'id': 'file_1',
-            'url': 'https://cdn.fastrelay.dev/file_1.png',
+            'url': 'https://cdn.fastrelay.io/file_1.png',
             'type': 'image',
             'mimeType': 'image/png',
             'size': 4,
@@ -341,7 +341,7 @@ void main() {
       expect(captured, isA<http.MultipartRequest>());
       final multipart = captured as http.MultipartRequest;
       expect(multipart.method, 'POST');
-      expect(multipart.url.toString(), 'https://api.fastrelay.dev/v1/files');
+      expect(multipart.url.toString(), 'https://api.fastrelay.io/v1/files');
       expect(multipart.fields['type'], 'image');
       expect(multipart.files, hasLength(1));
       expect(multipart.files.first.filename, 'avatar.png');
@@ -355,7 +355,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((request) async {
           captured = request;
           return jsonResponse({
@@ -386,7 +386,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((_) async {
           requestCount += 1;
           return jsonResponse({
@@ -429,7 +429,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((request) async {
           if (request.url.path.endsWith('/reactions')) {
             return jsonResponse({

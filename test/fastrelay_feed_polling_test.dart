@@ -63,7 +63,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((_) async {
           count += 1;
           return jsonResponse(feedResponse('act_$count'));
@@ -93,7 +93,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((_) async {
           count += 1;
           return jsonResponse(feedResponse('act_$count'));
@@ -133,7 +133,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((_) async {
           count += 1;
           if (count == 1) {
@@ -186,7 +186,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((_) async {
           return jsonResponse(feedResponse('act_1', unseen: 5, unread: 2));
         }),

@@ -137,6 +137,13 @@ Future<void> _flush([Duration duration = const Duration(milliseconds: 25)]) {
   return Future<void>.delayed(duration);
 }
 
+String _jwtExpiringAt(DateTime expiresAt) {
+  String encode(Map<String, Object> json) =>
+      base64Url.encode(utf8.encode(jsonEncode(json))).replaceAll('=', '');
+  final exp = expiresAt.millisecondsSinceEpoch ~/ 1000;
+  return '${encode({'alg': 'HS256'})}.${encode({'exp': exp})}.sig';
+}
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -146,7 +153,7 @@ void main() {
 
       final client = FastRelayClient(
         apiKey: 'key_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
         realtimeFactory:
             ({
@@ -174,7 +181,7 @@ void main() {
       expect(fakeSocketFactory.sockets, hasLength(1));
       expect(
         fakeSocketFactory.sockets.first.uri.toString(),
-        'wss://api.fastrelay.dev/v1/realtime?token=jwt_123',
+        'wss://api.fastrelay.io/v1/realtime?token=jwt_123',
       );
 
       await client.realtime!.dispose();
@@ -189,7 +196,7 @@ void main() {
         final client = FastRelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
-          baseUrl: 'https://api.fastrelay.dev',
+          baseUrl: 'https://api.fastrelay.io',
           httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
         );
 
@@ -252,7 +259,7 @@ void main() {
         final client = FastRelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
-          baseUrl: 'https://api.fastrelay.dev',
+          baseUrl: 'https://api.fastrelay.io',
           httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
         );
 
@@ -293,7 +300,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
       );
 
@@ -337,7 +344,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((_) async => jsonResponse({'data': []})),
       );
 
@@ -390,7 +397,7 @@ void main() {
         final client = FastRelayClient(
           apiKey: 'key_123',
           token: 'expired.jwt.token',
-          baseUrl: 'https://api.fastrelay.dev',
+          baseUrl: 'https://api.fastrelay.io',
           httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
         );
 
@@ -425,13 +432,144 @@ void main() {
     );
 
     test(
+      '4002 with tokenProvider refreshes once and reconnects with new token',
+      () async {
+        final socketFactory = FakeSocketFactory();
+        final client = FastRelayClient(
+          apiKey: 'key_123',
+          token: 'expired.jwt.token',
+          baseUrl: 'https://api.fastrelay.io',
+          httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
+        );
+
+        client.realtime = _buildRealtime(
+          client,
+          socketFactory,
+          tokenProvider: () async => 'fresh.jwt.token',
+        );
+        await client.realtime!.connect();
+
+        socketFactory.sockets.single.emitConnection(
+          FastRelayRealtimeSocketStatus.disconnected,
+          closeCode: 4002,
+        );
+
+        await _flush(const Duration(milliseconds: 80));
+
+        expect(socketFactory.sockets.length, 2);
+        expect(
+          socketFactory.sockets.last.uri.queryParameters['token'],
+          'fresh.jwt.token',
+        );
+        expect(client.token, 'fresh.jwt.token');
+
+        await client.realtime!.dispose();
+        client.close();
+        await socketFactory.dispose();
+      },
+    );
+
+    test('second consecutive 4002 is fatal INVALID_TOKEN', () async {
+      final socketFactory = FakeSocketFactory();
+      final client = FastRelayClient(
+        apiKey: 'key_123',
+        token: 'expired.jwt.token',
+        baseUrl: 'https://api.fastrelay.io',
+        httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
+      );
+
+      client.realtime = _buildRealtime(
+        client,
+        socketFactory,
+        tokenProvider: () async => 'still.rejected.token',
+      );
+      await client.realtime!.connect();
+
+      final errors = <FastRelayRealtimeError>[];
+      final errorSub = client.realtime!.errors.listen(errors.add);
+
+      socketFactory.sockets.single.emitConnection(
+        FastRelayRealtimeSocketStatus.disconnected,
+        closeCode: 4002,
+      );
+      await _flush(const Duration(milliseconds: 80));
+
+      socketFactory.sockets.last.emitConnection(
+        FastRelayRealtimeSocketStatus.disconnected,
+        closeCode: 4002,
+      );
+      await _flush(const Duration(milliseconds: 80));
+
+      expect(socketFactory.sockets, hasLength(2));
+      expect(errors.map((e) => e.code), contains('INVALID_TOKEN'));
+
+      await errorSub.cancel();
+      await client.realtime!.dispose();
+      client.close();
+      await socketFactory.dispose();
+    });
+
+    test(
+      'reconnect after connection drop refreshes an expired token first',
+      () async {
+        final socketFactory = FakeSocketFactory();
+        var now = DateTime.utc(2026, 1, 1);
+        final initialToken = _jwtExpiringAt(
+          now.add(const Duration(minutes: 10)),
+        );
+        final client = FastRelayClient(
+          apiKey: 'key_123',
+          token: initialToken,
+          baseUrl: 'https://api.fastrelay.io',
+          httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
+        );
+
+        client.realtime = FastRelayRealtime(
+          client: client,
+          token: initialToken,
+          tokenProvider: () async => 'fresh.jwt.token',
+          socketFactory: socketFactory.call,
+          subscribeDebounce: const Duration(milliseconds: 8),
+          reconnectInitialDelay: const Duration(milliseconds: 1),
+          reconnectMaxDelay: const Duration(milliseconds: 1),
+          deadConnectionTimeout: const Duration(seconds: 30),
+          now: () => now,
+        );
+        await client.realtime!.connect();
+
+        final socket1 = socketFactory.sockets.single;
+        expect(socket1.uri.queryParameters['token'], initialToken);
+        socket1.emitConnection(FastRelayRealtimeSocketStatus.connected);
+
+        now = now.add(const Duration(hours: 1));
+        socket1.emitConnection(
+          FastRelayRealtimeSocketStatus.disconnected,
+          closeCode: 1006,
+        );
+
+        await _flush(const Duration(milliseconds: 80));
+
+        expect(socketFactory.sockets.length, 2);
+        expect(
+          socketFactory.sockets.last.uri.queryParameters['token'],
+          'fresh.jwt.token',
+        );
+        expect(client.token, 'fresh.jwt.token');
+
+        await client.realtime!.dispose();
+        client.close();
+        await socketFactory.dispose();
+      },
+    );
+
+    test(
       'non-retryable disconnect surfaces errors and does not reconnect',
       () async {
         final socketFactory = FakeSocketFactory();
         final client = FastRelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
-          baseUrl: 'https://api.fastrelay.dev',
+          baseUrl: 'https://api.fastrelay.io',
           httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
         );
 
@@ -466,7 +604,7 @@ void main() {
       final client = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
       );
 

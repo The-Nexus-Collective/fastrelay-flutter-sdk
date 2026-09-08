@@ -38,7 +38,7 @@ void main() {
         final client = FastRelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
-          baseUrl: 'https://api.fastrelay.dev',
+          baseUrl: 'https://api.fastrelay.io',
           httpClient: CaptureClient((request) async {
             captured = request;
             return jsonResponse({
@@ -64,7 +64,7 @@ void main() {
         expect(captured.method, 'POST');
         expect(
           captured.url.toString(),
-          'https://api.fastrelay.dev/v1/moderation/flags',
+          'https://api.fastrelay.io/v1/moderation/flags',
         );
         expect(
           (captured as http.Request).headers['authorization'],
@@ -89,7 +89,7 @@ void main() {
         final client = FastRelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
-          baseUrl: 'https://api.fastrelay.dev',
+          baseUrl: 'https://api.fastrelay.io',
           httpClient: CaptureClient((request) async {
             captured = request;
             return jsonResponse({
@@ -116,7 +116,7 @@ void main() {
         expect(captured.method, 'GET');
         expect(
           captured.url.toString(),
-          'https://api.fastrelay.dev/v1/moderation/mutes?type=personal&limit=10&cursor=cursor_1',
+          'https://api.fastrelay.io/v1/moderation/mutes?type=personal&limit=10&cursor=cursor_1',
         );
         expect(captured.headers['authorization'], 'Bearer jwt_123');
         expect(page.hasMore, isFalse);
@@ -127,7 +127,7 @@ void main() {
     test('server auth mode is rejected in the client-only SDK', () async {
       final client = FastRelayClient(
         apiKey: 'public_key',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((request) async => jsonResponse({})),
       );
 

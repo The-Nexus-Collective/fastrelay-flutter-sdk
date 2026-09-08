@@ -55,6 +55,9 @@ class FastRelayClient {
   Map<String, dynamic>? user;
   FastRelayRealtime? realtime;
 
+  FastRelayTokenProvider? _tokenProvider;
+  Future<String>? _tokenRefresh;
+
   late final FastRelayCapabilitiesApi capabilities;
   late final FastRelayActivitiesApi activities;
   late final FastRelayReactionsApi reactions;
@@ -86,6 +89,7 @@ class FastRelayClient {
 
     this.user = Map<String, dynamic>.from(user);
     this.token = token;
+    _tokenProvider = tokenProvider;
 
     if (upsertUser) {
       await _request(
@@ -130,6 +134,7 @@ class FastRelayClient {
 
     user = null;
     token = null;
+    _tokenProvider = null;
     return this;
   }
 
@@ -137,6 +142,34 @@ class FastRelayClient {
     this.token = token;
     realtime?.updateToken(token);
     return this;
+  }
+
+  /// Fetches a fresh user JWT through the `tokenProvider` given to [connectUser]
+  /// and applies it with [setToken]. Concurrent callers share one in-flight
+  /// refresh. Throws [StateError] when no provider is configured.
+  Future<String> refreshToken() {
+    final pending = _tokenRefresh;
+    if (pending != null) {
+      return pending;
+    }
+    final refresh = _refreshToken();
+    _tokenRefresh = refresh;
+    return refresh.whenComplete(() => _tokenRefresh = null);
+  }
+
+  Future<String> _refreshToken() async {
+    final tokenProvider = _tokenProvider;
+    if (tokenProvider == null) {
+      throw StateError(
+        'Token refresh requires a tokenProvider. Pass one to connectUser().',
+      );
+    }
+    final token = await tokenProvider();
+    if (token.trim().isEmpty) {
+      throw StateError('tokenProvider returned an empty token.');
+    }
+    setToken(token);
+    return token;
   }
 
   FastRelayClient setBaseUrl(String baseUrl) {
@@ -1030,7 +1063,49 @@ class FastRelayClient {
     );
   }
 
+  /// Runs [send]; on a 401 with a user token and a configured `tokenProvider`,
+  /// refreshes the token once and re-runs [send]. A second 401 propagates.
+  Future<dynamic> _withTokenRefresh(
+    FastRelayAuthMode auth,
+    Future<dynamic> Function() send,
+  ) async {
+    try {
+      return await send();
+    } on FastRelayApiError catch (error) {
+      final canRefresh =
+          error.status == 401 &&
+          auth != FastRelayAuthMode.none &&
+          _tokenProvider != null;
+      if (!canRefresh) {
+        rethrow;
+      }
+      await refreshToken();
+      return send();
+    }
+  }
+
   Future<dynamic> _multipartRequest({
+    required String method,
+    required String path,
+    required List<int> bytes,
+    required String filename,
+    Map<String, String> fields = const {},
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _withTokenRefresh(
+      options.auth,
+      () => _sendMultipartRequest(
+        method: method,
+        path: path,
+        bytes: bytes,
+        filename: filename,
+        fields: fields,
+        options: options,
+      ),
+    );
+  }
+
+  Future<dynamic> _sendMultipartRequest({
     required String method,
     required String path,
     required List<int> bytes,
@@ -1072,9 +1147,7 @@ class FastRelayClient {
 
       throw FastRelayApiError(
         message:
-            (errorMap?['message'] ??
-                    parsedMap?['message'] ??
-                    fallbackMessage)
+            (errorMap?['message'] ?? parsedMap?['message'] ?? fallbackMessage)
                 .toString(),
         status: streamedResponse.statusCode,
         code: errorMap?['code']?.toString(),
@@ -1095,6 +1168,25 @@ class FastRelayClient {
   }
 
   Future<dynamic> _request({
+    required String method,
+    required String path,
+    Map<String, dynamic>? query,
+    Object? body,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _withTokenRefresh(
+      options.auth,
+      () => _sendRequest(
+        method: method,
+        path: path,
+        query: query,
+        body: body,
+        options: options,
+      ),
+    );
+  }
+
+  Future<dynamic> _sendRequest({
     required String method,
     required String path,
     Map<String, dynamic>? query,
@@ -1135,9 +1227,7 @@ class FastRelayClient {
 
       throw FastRelayApiError(
         message:
-            (errorMap?['message'] ??
-                    parsedMap?['message'] ??
-                    fallbackMessage)
+            (errorMap?['message'] ?? parsedMap?['message'] ?? fallbackMessage)
                 .toString(),
         status: streamedResponse.statusCode,
         code: errorMap?['code']?.toString(),

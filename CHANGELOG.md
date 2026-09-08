@@ -1,3 +1,9 @@
+## 0.5.2
+
+* Token refresh no longer depends on the realtime socket alone. `FastRelayClient` keeps the `tokenProvider` passed to `connectUser`, exposes `refreshToken()`, and retries a REST request once after a `401` with a freshly issued token. Concurrent refreshes share one provider call.
+* Realtime checks JWT expiry before every socket open (network-drop and dead-connection reconnects included, not only app resume) and refreshes first when a provider is configured.
+* Realtime treats close code `4002` (the server's answer to an expired JWT on the handshake) as one refresh-and-reconnect attempt when a provider is configured; a second `4002` in a row is still fatal `INVALID_TOKEN`.
+
 ## 0.5.1
 
 * `FastRelayComment` now exposes `custom: Map<String, dynamic>?` — arbitrary custom payload attached by the server (e.g. attachments), parsed from and serialized to JSON, `null` when absent. `FastRelayClient.addComment` accepts a matching optional `custom` parameter.

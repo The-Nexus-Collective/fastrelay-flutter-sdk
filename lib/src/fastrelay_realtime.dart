@@ -129,6 +129,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
   bool _observerRegistered = false;
   bool _lifecycleSuspended = false;
   bool _awaitingTokenRefresh = false;
+  bool _invalidTokenRefreshAttempted = false;
   bool _hasConnectedAtLeastOnce = false;
   bool _activeConnectAttemptWasReconnect = false;
 
@@ -341,6 +342,13 @@ class FastRelayRealtime with WidgetsBindingObserver {
       return;
     }
 
+    // Any reconnect (network drop, dead-connection timeout, resume) may run
+    // long after the token expired; the server rejects that handshake with
+    // 4002, so refresh up front whenever a provider can.
+    if (_tokenProvider != null && _isTokenExpired(_token)) {
+      _awaitingTokenRefresh = true;
+    }
+
     if (_awaitingTokenRefresh) {
       final refreshed = await _refreshToken();
       if (!refreshed) {
@@ -463,6 +471,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     }
 
     _reconnectAttempt = 0;
+    _invalidTokenRefreshAttempted = false;
     _cancelReconnectTimer();
     _setConnectionState(FastRelayConnectionState.connected);
 
@@ -492,6 +501,18 @@ class FastRelayRealtime with WidgetsBindingObserver {
     _setConnectionState(FastRelayConnectionState.disconnected);
 
     if (_lifecycleSuspended || !_shouldBeConnected) {
+      return;
+    }
+
+    // The server answers an expired JWT on the handshake with 4002, not 4003,
+    // so give the provider one shot at a fresh token before treating 4002 as
+    // fatal. A second 4002 in a row means the token really is invalid.
+    if (closeCode == 4002 &&
+        _tokenProvider != null &&
+        !_invalidTokenRefreshAttempted) {
+      _invalidTokenRefreshAttempted = true;
+      _awaitingTokenRefresh = true;
+      _scheduleReconnect(immediate: true);
       return;
     }
 
@@ -947,10 +968,6 @@ class FastRelayRealtime with WidgetsBindingObserver {
 
     if (!_shouldBeConnected) {
       return;
-    }
-
-    if (_isTokenExpired(_token)) {
-      _awaitingTokenRefresh = true;
     }
 
     _scheduleReconnect(immediate: true);

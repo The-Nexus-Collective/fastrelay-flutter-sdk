@@ -25,7 +25,7 @@ void main() {
       final fastrelay = FastRelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
-        baseUrl: 'https://api.fastrelay.dev',
+        baseUrl: 'https://api.fastrelay.io',
         httpClient: MockClient((request) async {
           captured = request;
           return jsonResponse({
@@ -46,7 +46,7 @@ void main() {
       expect(captured.headers['authorization'], 'Bearer jwt_123');
       expect(
         captured.url.toString(),
-        'https://api.fastrelay.dev/v1/activities',
+        'https://api.fastrelay.io/v1/activities',
       );
       expect(jsonDecode(captured.body), {
         'type': 'post',
@@ -63,7 +63,7 @@ void main() {
     final fastrelay = FastRelayClient(
       apiKey: 'key_123',
       token: 'jwt_123',
-      baseUrl: 'https://api.fastrelay.dev',
+      baseUrl: 'https://api.fastrelay.io',
       httpClient: MockClient((request) async {
         captured = request;
         return jsonResponse({
@@ -103,7 +103,7 @@ void main() {
     late http.Request captured;
     final fastrelay = FastRelayClient(
       apiKey: 'public_key',
-      baseUrl: 'https://api.fastrelay.dev',
+      baseUrl: 'https://api.fastrelay.io',
       httpClient: MockClient((request) async {
         captured = request;
         return jsonResponse({'id': 'john'});
@@ -120,7 +120,7 @@ void main() {
     final fastrelay = FastRelayClient(
       apiKey: 'key_123',
       token: 'jwt_123',
-      baseUrl: 'https://api.fastrelay.dev',
+      baseUrl: 'https://api.fastrelay.io',
       httpClient: MockClient((request) async {
         captured = request;
         return jsonResponse({
@@ -137,7 +137,7 @@ void main() {
     expect(captured.method, 'GET');
     expect(
       captured.url.toString(),
-      'https://api.fastrelay.dev/v1/me/capabilities?feed=timeline%3Ajohn',
+      'https://api.fastrelay.io/v1/me/capabilities?feed=timeline%3Ajohn',
     );
     expect(response['canAddActivity'], isTrue);
     expect(response['canDeleteOwnActivity'], isTrue);
@@ -148,7 +148,7 @@ void main() {
     final fastrelay = FastRelayClient(
       apiKey: 'key_123',
       token: 'jwt_123',
-      baseUrl: 'https://api.fastrelay.dev',
+      baseUrl: 'https://api.fastrelay.io',
       httpClient: MockClient((request) async {
         captured = request;
         return jsonResponse({'canAddActivity': true});
@@ -160,7 +160,7 @@ void main() {
     expect(captured.method, 'GET');
     expect(
       captured.url.toString(),
-      'https://api.fastrelay.dev/v1/me/capabilities?feed=timeline%3Ajohn',
+      'https://api.fastrelay.io/v1/me/capabilities?feed=timeline%3Ajohn',
     );
     expect((response as Map<String, dynamic>)['canAddActivity'], isTrue);
   });
@@ -176,7 +176,7 @@ void main() {
             'message': "Activity with ID 'act_missing' was not found.",
             'details': {'activityId': 'act_missing'},
             'hint': 'Verify the activity ID is correct.',
-            'docUrl': 'https://docs.fastrelay.dev/errors/ACTIVITY_NOT_FOUND',
+            'docUrl': 'https://docs.fastrelay.io/errors/ACTIVITY_NOT_FOUND',
           },
           'requestId': 'req_123',
         }, status: 404);
@@ -198,7 +198,7 @@ void main() {
             .having(
               (error) => error.docUrl,
               'docUrl',
-              'https://docs.fastrelay.dev/errors/ACTIVITY_NOT_FOUND',
+              'https://docs.fastrelay.io/errors/ACTIVITY_NOT_FOUND',
             ),
       ),
     );
@@ -208,7 +208,7 @@ void main() {
     final requests = <http.Request>[];
     final fastrelay = FastRelayClient(
       apiKey: 'key_123',
-      baseUrl: 'https://api.fastrelay.dev',
+      baseUrl: 'https://api.fastrelay.io',
       httpClient: MockClient((request) async {
         requests.add(request);
         return jsonResponse({'id': 'john'});
@@ -228,7 +228,7 @@ void main() {
     expect(requests, hasLength(1));
     final captured = requests.single;
     expect(captured.method, 'POST');
-    expect(captured.url.toString(), 'https://api.fastrelay.dev/v1/users');
+    expect(captured.url.toString(), 'https://api.fastrelay.io/v1/users');
     expect(captured.headers['authorization'], 'Bearer jwt_123');
     expect(jsonDecode(captured.body), {
       'id': 'john',
