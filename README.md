@@ -8,7 +8,7 @@ Flutter SDK for [fastrelay](https://fastrelay.io) activity feeds — feeds, acti
 - Realtime subscriptions with automatic reconnect + token refresh
 - Polling fallback for non-realtime environments
 - Direct-to-storage video uploads (tus / Cloudflare Stream)
-- Structured `fastrelayApiError` with rate-limit metadata
+- Structured `FastRelayApiError` with rate-limit metadata
 
 ## Contents
 
@@ -39,7 +39,7 @@ dependencies:
   fastrelay_feed_sdk:
     git:
       url: https://github.com/The-Nexus-Collective/fastrelay-flutter-sdk
-      ref: v0.5.0
+      ref: v0.5.2
 ```
 
 Then:
@@ -53,7 +53,7 @@ flutter pub get
 ```dart
 import 'package:fastrelay_feed_sdk/fastrelay_feed_sdk.dart';
 
-final fastrelay = fastrelayClient(
+final fastrelay = FastRelayClient(
   apiKey: 'your_api_key',
   baseUrl: 'https://api.fastrelay.io',
 );
@@ -74,7 +74,7 @@ await timeline.addActivity({
 final page = await timeline.getActivities(query: {'limit': 25});
 ```
 
-All request and response payloads are plain `Map<String, dynamic>` in `camelCase`. Typed models (`fastrelayActivity`, `fastrelayReaction`, `fastrelayComment`, `CursorPage<T>`, etc.) are returned by the strongly-typed helpers on `fastrelayClient` — see [Activities, reactions, comments](#activities-reactions-comments).
+All request and response payloads are plain `Map<String, dynamic>` in `camelCase`. Typed models (`FastRelayActivity`, `FastRelayReaction`, `FastRelayComment`, `CursorPage<T>`, etc.) are returned by the strongly-typed helpers on `FastRelayClient` — see [Activities, reactions, comments](#activities-reactions-comments).
 
 ## Authentication
 
@@ -230,7 +230,7 @@ fastrelay.realtime?.videoStatusEvents
 
 ## Aggregated / notification feeds
 
-For feeds configured with aggregation (notifications, grouped activity), use `getNotificationFeedActivities`, which returns `NotificationPage<fastrelayActivity>` with grouped entries and unseen/unread counts:
+For feeds configured with aggregation (notifications, grouped activity), use `getNotificationFeedActivities`, which returns `NotificationPage<FastRelayActivity>` with grouped entries and unseen/unread counts:
 
 ```dart
 final notifications = await fastrelay.getNotificationFeedActivities(
@@ -247,12 +247,12 @@ for (final group in notifications.groups) {
 
 ## Error handling
 
-Every non-2xx response throws `fastrelayApiError` with the parsed error envelope plus rate-limit headers:
+Every non-2xx response throws `FastRelayApiError` with the parsed error envelope plus rate-limit headers:
 
 ```dart
 try {
   await fastrelay.activities.get('act_missing');
-} on fastrelayApiError catch (error) {
+} on FastRelayApiError catch (error) {
   print('${error.status} ${error.code}: ${error.message}');
   print('hint: ${error.hint}');
   print('requestId: ${error.requestId}');
