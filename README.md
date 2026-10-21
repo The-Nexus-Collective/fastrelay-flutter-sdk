@@ -66,10 +66,7 @@ await fastrelay.connectUser(
 final timeline = fastrelay.feed('timeline', 'john');
 await timeline.getOrCreate();
 
-await timeline.addActivity({
-  'type': 'post',
-  'text': 'Hello fastrelay!',
-});
+await timeline.addActivity(type: 'post', text: 'Hello fastrelay!');
 
 final page = await timeline.getActivities(query: {'limit': 25});
 ```
@@ -115,17 +112,17 @@ the connecting user's own record with that JWT.
 ```dart
 final feed = fastrelay.feed('timeline', 'john');
 
-await feed.getOrCreate();
+await feed.getOrCreate(visibility: 'followers');
 await feed.getActivities(query: {'limit': 25, 'view': 'trending'});
 await feed.getCapabilities();
 
-await feed.addActivity({'type': 'post', 'text': 'hello'});
+await feed.addActivity(type: 'post', text: 'hello');
 await feed.follow('user:jane');
 await feed.batchFollow(['user:jane', 'user:bob']);
 await feed.unfollow('user:jane', keepHistory: false);
 
 await feed.setVisibility('public');
-await feed.updateSettings({'followApproval': 'required'});
+await feed.updateSettings(followApproval: 'required');
 await feed.addMember('user_jane', role: 'moderator');
 await feed.listMembers(query: {'limit': 25});
 await feed.removeMember('user_jane');

@@ -40,13 +40,15 @@ class FastRelayFeed {
   }
 
   Future<dynamic> getOrCreate({
-    Map<String, dynamic> request = const {},
+    String? userId,
+    String? visibility,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     return _client.getOrCreateFeed(
       group,
       feedId,
-      request: request,
+      userId: userId,
+      visibility: visibility,
       options: options,
     );
   }
@@ -95,23 +97,30 @@ class FastRelayFeed {
     return _client.getCapabilities(query: scopedQuery, options: options);
   }
 
-  Future<dynamic> addActivity(
-    Map<String, dynamic> activity, {
+  Future<dynamic> addActivity({
+    required String type,
+    List<String> feeds = const [],
+    String? id,
+    String? text,
+    String? userId,
+    Map<String, dynamic>? custom,
+    String? visibility,
+    String? expiresAt,
+    String? createdAt,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
-    final feedName = id;
-    final feeds = <String>[
-      if (activity['feeds'] is Iterable)
-        ...((activity['feeds'] as Iterable).map((entry) => entry.toString())),
-    ];
-
-    if (!feeds.contains(feedName)) {
-      feeds.add(feedName);
-    }
-
-    final payload = <String, dynamic>{...activity, 'feeds': feeds};
-
-    return _client.addActivity(payload, options: options);
+    return _client.addActivity(
+      type: type,
+      feeds: [...feeds, if (!feeds.contains(this.id)) this.id],
+      id: id,
+      text: text,
+      userId: userId,
+      custom: custom,
+      visibility: visibility,
+      expiresAt: expiresAt,
+      createdAt: createdAt,
+      options: options,
+    );
   }
 
   Future<dynamic> delete({
@@ -127,14 +136,14 @@ class FastRelayFeed {
     return _client.setFeedVisibility(group, feedId, level, options: options);
   }
 
-  Future<dynamic> updateSettings(
-    Map<String, dynamic> settings, {
+  Future<dynamic> updateSettings({
+    String? followApproval,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     return _client.updateFeedSettings(
       group,
       feedId,
-      settings,
+      followApproval: followApproval,
       options: options,
     );
   }
@@ -144,10 +153,13 @@ class FastRelayFeed {
     String role = 'member',
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
-    return _client.addFeedMember(group, feedId, {
-      'userId': userId,
-      'role': role,
-    }, options: options);
+    return _client.addFeedMember(
+      group,
+      feedId,
+      userId,
+      role: role,
+      options: options,
+    );
   }
 
   Future<dynamic> removeMember(
@@ -174,12 +186,13 @@ class FastRelayFeed {
     int? activityCopyLimit,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
-    return _client.followFeed(group, feedId, {
-      'target': target,
-      ...?activityCopyLimit == null
-          ? null
-          : {'activityCopyLimit': activityCopyLimit},
-    }, options: options);
+    return _client.followFeed(
+      group,
+      feedId,
+      target,
+      activityCopyLimit: activityCopyLimit,
+      options: options,
+    );
   }
 
   Future<dynamic> batchFollow(
@@ -187,12 +200,13 @@ class FastRelayFeed {
     int? activityCopyLimit,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
-    return _client.batchFollowFeed(group, feedId, {
-      'targets': targets,
-      ...?activityCopyLimit == null
-          ? null
-          : {'activityCopyLimit': activityCopyLimit},
-    }, options: options);
+    return _client.batchFollowFeed(
+      group,
+      feedId,
+      targets,
+      activityCopyLimit: activityCopyLimit,
+      options: options,
+    );
   }
 
   Future<dynamic> unfollow(
