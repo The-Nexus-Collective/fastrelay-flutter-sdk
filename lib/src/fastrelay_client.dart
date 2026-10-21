@@ -211,14 +211,20 @@ class FastRelayClient {
   }
 
   Future<dynamic> updateUser(
-    String id,
-    Map<String, dynamic> request, {
+    String id, {
+    String? displayName,
+    Map<String, dynamic>? profileData,
+    String? role,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     return _request(
       method: 'PATCH',
       path: '/v1/users/${Uri.encodeComponent(id)}',
-      body: request,
+      body: {
+        'displayName': ?displayName,
+        'profileData': ?profileData,
+        'role': ?role,
+      },
       options: options,
     );
   }
@@ -226,14 +232,15 @@ class FastRelayClient {
   Future<dynamic> getOrCreateFeed(
     String group,
     String id, {
-    Map<String, dynamic> request = const {},
+    String? userId,
+    String? visibility,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     return _request(
       method: 'POST',
       path:
           '/v1/feeds/${Uri.encodeComponent(group)}/${Uri.encodeComponent(id)}',
-      body: request,
+      body: {'userId': ?userId, 'visibility': ?visibility},
       options: options,
     );
   }
@@ -283,15 +290,15 @@ class FastRelayClient {
 
   Future<dynamic> updateFeedSettings(
     String group,
-    String id,
-    Map<String, dynamic> request, {
+    String id, {
+    String? followApproval,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     return _request(
       method: 'PUT',
       path:
           '/v1/feeds/${Uri.encodeComponent(group)}/${Uri.encodeComponent(id)}/settings',
-      body: request,
+      body: {if (followApproval != null) 'followApproval': followApproval},
       options: options,
     );
   }
@@ -299,14 +306,15 @@ class FastRelayClient {
   Future<dynamic> addFeedMember(
     String group,
     String id,
-    Map<String, dynamic> request, {
+    String userId, {
+    String? role,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     return _request(
       method: 'POST',
       path:
           '/v1/feeds/${Uri.encodeComponent(group)}/${Uri.encodeComponent(id)}/members',
-      body: request,
+      body: {'userId': userId, if (role != null) 'role': role},
       options: options,
     );
   }
@@ -343,12 +351,13 @@ class FastRelayClient {
   Future<dynamic> followFeed(
     String group,
     String id,
-    Map<String, dynamic> request, {
+    Object target, {
+    int? activityCopyLimit,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     final payload = <String, dynamic>{
-      ...request,
-      'target': resolveFeedTarget(request['target']),
+      'target': resolveFeedTarget(target),
+      'activityCopyLimit': ?activityCopyLimit,
     };
 
     return _request(
@@ -363,22 +372,17 @@ class FastRelayClient {
   Future<dynamic> batchFollowFeed(
     String group,
     String id,
-    Map<String, dynamic> request, {
+    Iterable<Object> targets, {
+    int? activityCopyLimit,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
-    final targets = <String>[
-      for (final target in (request['targets'] as Iterable? ?? const []))
-        resolveFeedTarget(target),
-    ];
-
     return _request(
       method: 'POST',
       path:
           '/v1/feeds/${Uri.encodeComponent(group)}/${Uri.encodeComponent(id)}/follows/batch',
       body: {
-        if (request['activityCopyLimit'] != null)
-          'activityCopyLimit': request['activityCopyLimit'],
-        'targets': targets,
+        'activityCopyLimit': ?activityCopyLimit,
+        'targets': [for (final target in targets) resolveFeedTarget(target)],
       },
       options: options,
     );
@@ -476,14 +480,32 @@ class FastRelayClient {
     );
   }
 
-  Future<dynamic> addActivity(
-    Map<String, dynamic> request, {
+  Future<dynamic> addActivity({
+    required String type,
+    required List<String> feeds,
+    String? id,
+    String? text,
+    String? userId,
+    Map<String, dynamic>? custom,
+    String? visibility,
+    String? expiresAt,
+    String? createdAt,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     return _request(
       method: 'POST',
       path: '/v1/activities',
-      body: request,
+      body: {
+        'id': ?id,
+        'type': type,
+        'text': ?text,
+        'userId': ?userId,
+        'feeds': feeds,
+        'custom': ?custom,
+        'visibility': ?visibility,
+        'expiresAt': ?expiresAt,
+        'createdAt': ?createdAt,
+      },
       options: options,
     );
   }
@@ -500,14 +522,16 @@ class FastRelayClient {
   }
 
   Future<dynamic> updateActivity(
-    String id,
-    Map<String, dynamic> request, {
+    String id, {
+    String? text,
+    Map<String, dynamic>? custom,
+    String? visibility,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     return _request(
       method: 'PATCH',
       path: '/v1/activities/${Uri.encodeComponent(id)}',
-      body: request,
+      body: {'text': ?text, 'custom': ?custom, 'visibility': ?visibility},
       options: options,
     );
   }
@@ -524,14 +548,13 @@ class FastRelayClient {
   }
 
   Future<dynamic> batchGetActivities(
-    Object requestOrIds, {
+    List<String> ids, {
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
-    final body = requestOrIds is List ? {'ids': requestOrIds} : requestOrIds;
     return _request(
       method: 'POST',
       path: '/v1/activities/batch',
-      body: body,
+      body: {'ids': ids},
       options: options,
     );
   }
@@ -631,9 +654,9 @@ class FastRelayClient {
       path: '/v1/activities/${Uri.encodeComponent(activityId)}/comments',
       body: {
         'text': text,
-        if (parentId != null) 'parentId': parentId,
-        if (mentionedUsers != null) 'mentionedUsers': mentionedUsers,
-        if (custom != null) 'custom': custom,
+        'parentId': ?parentId,
+        'mentionedUsers': ?mentionedUsers,
+        'custom': ?custom,
       },
       options: options,
     );
@@ -981,7 +1004,7 @@ class FastRelayClient {
         'targetType': targetType,
         'targetId': targetId,
         'reason': reason,
-        if (description != null) 'description': description,
+        'description': ?description,
       },
       options: options,
     );
@@ -1325,11 +1348,30 @@ class FastRelayActivitiesApi {
 
   final FastRelayClient _client;
 
-  Future<dynamic> add(
-    Map<String, dynamic> request, {
+  Future<dynamic> add({
+    required String type,
+    required List<String> feeds,
+    String? id,
+    String? text,
+    String? userId,
+    Map<String, dynamic>? custom,
+    String? visibility,
+    String? expiresAt,
+    String? createdAt,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
-    return _client.addActivity(request, options: options);
+    return _client.addActivity(
+      type: type,
+      feeds: feeds,
+      id: id,
+      text: text,
+      userId: userId,
+      custom: custom,
+      visibility: visibility,
+      expiresAt: expiresAt,
+      createdAt: createdAt,
+      options: options,
+    );
   }
 
   Future<dynamic> get(
@@ -1340,11 +1382,19 @@ class FastRelayActivitiesApi {
   }
 
   Future<dynamic> update(
-    String id,
-    Map<String, dynamic> request, {
+    String id, {
+    String? text,
+    Map<String, dynamic>? custom,
+    String? visibility,
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
-    return _client.updateActivity(id, request, options: options);
+    return _client.updateActivity(
+      id,
+      text: text,
+      custom: custom,
+      visibility: visibility,
+      options: options,
+    );
   }
 
   Future<dynamic> delete(
@@ -1355,10 +1405,10 @@ class FastRelayActivitiesApi {
   }
 
   Future<dynamic> batchGet(
-    Object requestOrIds, {
+    List<String> ids, {
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
-    return _client.batchGetActivities(requestOrIds, options: options);
+    return _client.batchGetActivities(ids, options: options);
   }
 }
 

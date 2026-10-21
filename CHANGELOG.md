@@ -1,3 +1,9 @@
+## 0.6.0
+
+* **Breaking:** request bodies are typed named parameters instead of `Map<String, dynamic>`, matching the backend DTOs. Affected: `updateUser`, `getOrCreateFeed` / `feed.getOrCreate`, `updateFeedSettings` / `feed.updateSettings`, `addFeedMember`, `followFeed`, `batchFollowFeed`, `addActivity` / `feed.addActivity` / `activities.add`, `updateActivity` / `activities.update`, and `batchGetActivities` / `activities.batchGet` (now `List<String> ids`). Migrate `feed.addActivity({'type': 'post', 'text': 'hi'})` to `feed.addActivity(type: 'post', text: 'hi')`.
+* `getOrCreateFeed` / `feed.getOrCreate` accept `visibility`, applied when the feed is created; an existing feed keeps its visibility.
+* `updateActivity` / `activities.update` accept `visibility`.
+
 ## 0.5.2
 
 * Token refresh no longer depends on the realtime socket alone. `FastRelayClient` keeps the `tokenProvider` passed to `connectUser`, exposes `refreshToken()`, and retries a REST request once after a `401` with a freshly issued token. Concurrent refreshes share one provider call.

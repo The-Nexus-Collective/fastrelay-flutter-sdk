@@ -37,17 +37,13 @@ void main() {
         }),
       );
 
-      final activity = await fastrelay.feed('timeline', 'john').addActivity({
-        'type': 'post',
-        'text': 'hello',
-      });
+      final activity = await fastrelay
+          .feed('timeline', 'john')
+          .addActivity(type: 'post', text: 'hello');
 
       expect(captured.method, 'POST');
       expect(captured.headers['authorization'], 'Bearer jwt_123');
-      expect(
-        captured.url.toString(),
-        'https://api.fastrelay.io/v1/activities',
-      );
+      expect(captured.url.toString(), 'https://api.fastrelay.io/v1/activities');
       expect(jsonDecode(captured.body), {
         'type': 'post',
         'text': 'hello',
