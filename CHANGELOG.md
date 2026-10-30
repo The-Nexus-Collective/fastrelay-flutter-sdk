@@ -1,3 +1,7 @@
+## 0.5.3
+
+* Add presigned direct uploads for images and videos. `FastRelayClient.uploadFileDirect(bytes, contentType)` (also `files.uploadDirect`) reserves the file with `POST /v1/files/uploads`, PUTs the bytes straight to storage with the signed headers and confirms it with `POST /v1/files/{fileId}/confirm`, so the bytes no longer pass through the API. The lower-level `createFileUpload` / `confirmFileUpload` (`files.createUpload` / `files.confirmUpload`) and the `FastRelayFileUpload` model are exposed too. Multipart `uploadFile` is unchanged and still covers other content types.
+
 ## 0.5.2
 
 * Token refresh no longer depends on the realtime socket alone. `FastRelayClient` keeps the `tokenProvider` passed to `connectUser`, exposes `refreshToken()`, and retries a REST request once after a `401` with a freshly issued token. Concurrent refreshes share one provider call.

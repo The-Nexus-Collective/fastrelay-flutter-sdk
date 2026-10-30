@@ -907,6 +907,92 @@ class FastRelayClient {
     );
   }
 
+  /// Reserves a pending image or video file and returns a presigned PUT URL.
+  ///
+  /// Prefer [uploadFileDirect], which also uploads and confirms the file.
+  Future<FastRelayFileUpload> createFileUpload({
+    required String contentType,
+    required int sizeBytes,
+    String? type,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/files/uploads',
+      body: {
+        'contentType': contentType,
+        'sizeBytes': sizeBytes,
+        if (type != null && type.trim().isNotEmpty) 'type': type.trim(),
+      },
+      options: options,
+    );
+    return FastRelayFileUpload.fromJson(_asMap(response));
+  }
+
+  /// Makes an uploaded file available once its bytes are in storage.
+  ///
+  /// Throws a `409` [FastRelayApiError] with code `FILE_NOT_UPLOADED` while the
+  /// object is missing or incomplete; the call can be retried.
+  Future<FastRelayFile> confirmFileUpload(
+    String fileId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/files/${Uri.encodeComponent(fileId)}/confirm',
+      options: options,
+    );
+    return FastRelayFile.fromJson(_asMap(response));
+  }
+
+  /// Uploads an image or video straight to storage instead of through the API.
+  ///
+  /// Reserves the file, PUTs [bytes] to the presigned URL and confirms it.
+  /// [contentType] must be an `image/*` or `video/*` type matching the bytes;
+  /// use [uploadFile] for anything else.
+  Future<FastRelayFile> uploadFileDirect(
+    List<int> bytes,
+    String contentType, {
+    String? type,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    if (bytes.isEmpty) {
+      throw ArgumentError('uploadFileDirect requires non-empty bytes.');
+    }
+
+    final upload = await createFileUpload(
+      contentType: contentType,
+      sizeBytes: bytes.length,
+      type: type,
+      options: options,
+    );
+
+    final request = http.Request('PUT', Uri.parse(upload.uploadUrl));
+    // The transport derives Content-Length from the body, which is exactly
+    // the signed size.
+    upload.requiredHeaders.forEach((name, value) {
+      if (name.toLowerCase() != 'content-length') {
+        request.headers[name] = value;
+      }
+    });
+    request.bodyBytes = bytes;
+
+    final streamedResponse = await _httpClient.send(request);
+    final responseBody = await streamedResponse.stream.bytesToString();
+    if (streamedResponse.statusCode < 200 ||
+        streamedResponse.statusCode >= 300) {
+      throw FastRelayApiError(
+        message:
+            'File upload to storage failed (${streamedResponse.statusCode} ${streamedResponse.reasonPhrase ?? ''}). $responseBody'
+                .trim(),
+        status: streamedResponse.statusCode,
+        method: 'PUT',
+      );
+    }
+
+    return confirmFileUpload(upload.fileId, options: options);
+  }
+
   Future<FastRelayVideoUploadUrl> createVideoUploadUrl({
     required String filename,
     required int sizeBytes,
@@ -1586,6 +1672,41 @@ class FastRelayFilesApi {
     FastRelayRequestOptions options = const FastRelayRequestOptions(),
   }) {
     return _client.uploadFile(bytes, filename, type: type, options: options);
+  }
+
+  Future<FastRelayFile> uploadDirect(
+    List<int> bytes,
+    String contentType, {
+    String? type,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.uploadFileDirect(
+      bytes,
+      contentType,
+      type: type,
+      options: options,
+    );
+  }
+
+  Future<FastRelayFileUpload> createUpload({
+    required String contentType,
+    required int sizeBytes,
+    String? type,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.createFileUpload(
+      contentType: contentType,
+      sizeBytes: sizeBytes,
+      type: type,
+      options: options,
+    );
+  }
+
+  Future<FastRelayFile> confirmUpload(
+    String fileId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.confirmFileUpload(fileId, options: options);
   }
 
   Future<void> delete(

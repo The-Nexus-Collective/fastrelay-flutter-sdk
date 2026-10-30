@@ -45,6 +45,38 @@ class FastRelayFile {
   }
 }
 
+/// A presigned direct upload reserved by `POST /v1/files/uploads`.
+///
+/// PUT the file body to [uploadUrl] with every entry of [requiredHeaders]
+/// before [expiresAt], then confirm it with
+/// `FastRelayClient.confirmFileUpload(fileId)`.
+class FastRelayFileUpload {
+  const FastRelayFileUpload({
+    required this.fileId,
+    required this.uploadUrl,
+    required this.requiredHeaders,
+    required this.expiresAt,
+  });
+
+  final String fileId;
+  final String uploadUrl;
+  final Map<String, String> requiredHeaders;
+  final DateTime expiresAt;
+
+  factory FastRelayFileUpload.fromJson(Map<String, dynamic> json) {
+    return FastRelayFileUpload(
+      fileId: json['fileId']?.toString() ?? '',
+      uploadUrl: json['uploadUrl']?.toString() ?? '',
+      requiredHeaders: _asMap(
+        json['requiredHeaders'],
+      ).map((key, value) => MapEntry(key, value.toString())),
+      expiresAt:
+          _parseDateTime(json['expiresAt']) ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+    );
+  }
+}
+
 Map<String, dynamic> _asMap(dynamic value) {
   if (value is Map<String, dynamic>) {
     return Map<String, dynamic>.from(value);
