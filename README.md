@@ -7,7 +7,7 @@ Flutter SDK for [fastrelay](https://fastrelay.io) activity feeds — feeds, acti
 - Idiomatic Dart `camelCase` payloads
 - Realtime subscriptions with automatic reconnect + token refresh
 - Polling fallback for non-realtime environments
-- Direct-to-storage video uploads (tus / Cloudflare Stream)
+- Direct-to-storage image uploads (presigned PUT) and video uploads (tus / Cloudflare Stream)
 - Structured `FastRelayApiError` with rate-limit metadata
 
 ## Contents
@@ -20,6 +20,7 @@ Flutter SDK for [fastrelay](https://fastrelay.io) activity feeds — feeds, acti
 - [Activities, reactions, comments](#activities-reactions-comments)
 - [Realtime](#realtime)
 - [Polling fallback](#polling-fallback)
+- [File upload](#file-upload)
 - [Video upload](#video-upload)
 - [Aggregated / notification feeds](#aggregated--notification-feeds)
 - [Error handling](#error-handling)
@@ -209,6 +210,20 @@ polling.pollFeed('timeline', 'john', limit: 25).listen((page) {
 polling.pause();  // when app backgrounds
 polling.resume(); // when app foregrounds
 ```
+
+## File upload
+
+`uploadFileDirect` sends an image or video straight to storage: it reserves the file, PUTs the bytes to a presigned URL and confirms the upload. The content type must be an `image/*` or `video/*` type that matches the bytes.
+
+```dart
+final file = await fastrelay.uploadFileDirect(
+  await photo.readAsBytes(),
+  'image/jpeg',
+);
+print(file.url);
+```
+
+For other content types, `uploadFile(bytes, filename)` uploads through the API as multipart.
 
 ## Video upload
 

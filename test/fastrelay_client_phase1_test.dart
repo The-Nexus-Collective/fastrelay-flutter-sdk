@@ -350,6 +350,112 @@ void main() {
       expect(file.size, 4);
     });
 
+    test('uploadFileDirect reserves, PUTs to storage and confirms', () async {
+      final requests = <http.BaseRequest>[];
+      final client = FastRelayClient(
+        apiKey: 'key_123',
+        token: 'jwt_123',
+        baseUrl: 'https://api.fastrelay.io',
+        httpClient: CaptureClient((request) async {
+          requests.add(request);
+          switch (requests.length) {
+            case 1:
+              return jsonResponse({
+                'fileId': 'file_1',
+                'uploadUrl':
+                    'https://bucket.spaces.test/feed/file_1.png?X-Amz-Signature=sig',
+                'requiredHeaders': {
+                  'content-type': 'image/png',
+                  'content-length': '4',
+                },
+                'expiresAt': '2026-10-30T10:15:00Z',
+              });
+            case 2:
+              return http.StreamedResponse(const Stream.empty(), 200);
+            default:
+              return jsonResponse({
+                'id': 'file_1',
+                'url': 'https://cdn.fastrelay.io/file_1.png',
+                'type': 'image',
+                'mimeType': 'image/png',
+                'size': 4,
+                'metadata': {},
+                'createdAt': '2026-10-30T10:00:00Z',
+              });
+          }
+        }),
+      );
+
+      final file = await client.uploadFileDirect(const [
+        0,
+        1,
+        2,
+        3,
+      ], 'image/png');
+
+      expect(requests, hasLength(3));
+      final create = requests[0] as http.Request;
+      expect(
+        create.url.toString(),
+        'https://api.fastrelay.io/v1/files/uploads',
+      );
+      expect(jsonDecode(create.body), {
+        'contentType': 'image/png',
+        'sizeBytes': 4,
+      });
+
+      final put = requests[1] as http.Request;
+      expect(put.method, 'PUT');
+      expect(put.url.host, 'bucket.spaces.test');
+      expect(put.headers['content-type'], 'image/png');
+      expect(put.headers.containsKey('authorization'), isFalse);
+      expect(put.headers.containsKey('content-length'), isFalse);
+      expect(put.bodyBytes, [0, 1, 2, 3]);
+
+      final confirm = requests[2];
+      expect(confirm.method, 'POST');
+      expect(
+        confirm.url.toString(),
+        'https://api.fastrelay.io/v1/files/file_1/confirm',
+      );
+      expect(file.id, 'file_1');
+      expect(file.url, 'https://cdn.fastrelay.io/file_1.png');
+    });
+
+    test('uploadFileDirect does not confirm when the PUT fails', () async {
+      final requests = <http.BaseRequest>[];
+      final client = FastRelayClient(
+        apiKey: 'key_123',
+        token: 'jwt_123',
+        baseUrl: 'https://api.fastrelay.io',
+        httpClient: CaptureClient((request) async {
+          requests.add(request);
+          if (requests.length == 1) {
+            return jsonResponse({
+              'fileId': 'file_1',
+              'uploadUrl': 'https://bucket.spaces.test/feed/file_1.png',
+              'requiredHeaders': {'content-type': 'image/png'},
+              'expiresAt': '2026-10-30T10:15:00Z',
+            });
+          }
+          return http.StreamedResponse(
+            Stream.value(utf8.encode('<Error>SignatureDoesNotMatch</Error>')),
+            403,
+          );
+        }),
+      );
+
+      await expectLater(
+        client.uploadFileDirect(const [0, 1, 2, 3], 'image/png'),
+        throwsA(
+          isA<FastRelayApiError>()
+              .having((e) => e.status, 'status', 403)
+              .having((e) => e.method, 'method', 'PUT'),
+        ),
+      );
+      expect(requests, hasLength(2));
+    });
+
     test('submitFeedback validates type and posts payload', () async {
       late http.BaseRequest captured;
       final client = FastRelayClient(
