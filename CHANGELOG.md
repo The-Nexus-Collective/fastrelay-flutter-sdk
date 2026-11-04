@@ -1,3 +1,9 @@
+## Unreleased
+
+* Add `FastRelayRealtime.connectionEstablished`, a stream of `FastRelayConnectionEstablished` (`connectionId`, `serverTime`, `isReconnect`) emitted on every server `connection.established`. Apps reload what they display when `isReconnect` is true.
+* Remove the post-reconnect feed refetch. It requested the latest 25 activities of every subscribed feed and discarded the result, so it never delivered missed events; the `RECONNECT_CATCHUP_FAILED` realtime error is no longer emitted.
+* README: fix stale examples (`.data` instead of `.items`, `event.data`, `activity.created`, video status `event.type`, `unseenCount` / `unreadCount`, `groupKey`) and describe when `tokenProvider` is called.
+
 ## 0.5.3
 
 * Add presigned direct uploads for images and videos. `FastRelayClient.uploadFileDirect(bytes, contentType)` (also `files.uploadDirect`) reserves the file with `POST /v1/files/uploads`, PUTs the bytes straight to storage with the signed headers and confirms it with `POST /v1/files/{fileId}/confirm`, so the bytes no longer pass through the API. The lower-level `createFileUpload` / `confirmFileUpload` (`files.createUpload` / `files.confirmUpload`) and the `FastRelayFileUpload` model are exposed too. Multipart `uploadFile` is unchanged and still covers other content types.

@@ -99,7 +99,7 @@ await fastrelay.connectUser(
 );
 ```
 
-`tokenProvider` is called transparently when the realtime channel receives a `4003 TOKEN_EXPIRED` close — no manual reconnect needed.
+`tokenProvider` is called transparently when a REST request gets a `401`, when the realtime channel closes with `4003 TOKEN_EXPIRED` or rejects the handshake with `4002`, and before reconnecting with an expired token. No manual reconnect is needed.
 
 ### Client-only by design
 
@@ -142,7 +142,7 @@ final reaction = await fastrelay.addReaction('act_123', type: 'like');
 await fastrelay.removeReaction('act_123', reaction.id);
 
 final comments = await fastrelay.listComments('act_123', limit: 25);
-for (final comment in comments.items) {
+for (final comment in comments.data) {
   // `user` is the embedded author object (null when not enriched)
   print('${comment.user?.displayName ?? comment.userId}: ${comment.text}');
 }
@@ -176,17 +176,23 @@ realtime.errors.listen((error) {
 });
 
 final timelineEvents = realtime.eventsForFeed('timeline:john');
-final activityAdds = realtime.eventsForFeed('timeline:john', type: 'activity.added');
+final activityAdds = realtime.eventsForFeed('timeline:john', type: 'activity.created');
 
 final sub = timelineEvents.listen((event) {
-  print('${event.type} on ${event.feedId}: ${event.payload}');
+  print('${event.type} on ${event.feedId}: ${event.data}');
 });
 
 // Later:
 await sub.cancel();
 ```
 
-Subscriptions are reference-counted: subscribing to a feed stream sends a `subscribe` frame, and cancelling the last listener for a feed sends an `unsubscribe`. Reconnects automatically resubscribe and catch up missed activities.
+Subscriptions are reference-counted: subscribing to a feed stream sends a `subscribe` frame, and cancelling the last listener for a feed sends an `unsubscribe`. Reconnects automatically resubscribe, but events sent while the socket was down are not replayed. Every (re)connect emits on `connectionEstablished`; when `isReconnect` is true, reload the feeds you are showing:
+
+```dart
+realtime.connectionEstablished
+    .where((event) => event.isReconnect)
+    .listen((_) => reloadVisibleFeeds());
+```
 
 By default, the connection suspends on `AppLifecycleState.paused` and resumes on `resumed`. Pass `maintainBackgroundConnection: true` to `connectUser` to keep it open in the background.
 
@@ -202,7 +208,7 @@ final polling = FeedPollingService(
 );
 
 polling.pollFeed('timeline', 'john', limit: 25).listen((page) {
-  for (final activity in page.items) {
+  for (final activity in page.data) {
     print(activity.id);
   }
 });
@@ -240,7 +246,7 @@ final result = await uploadVideoBytes(
 
 fastrelay.realtime?.videoStatusEvents
     .where((event) => event.videoId == result.videoId)
-    .listen((event) => print('video ${event.videoId}: ${event.status}'));
+    .listen((event) => print('video ${event.videoId}: ${event.type}'));
 ```
 
 ## Aggregated / notification feeds
@@ -254,9 +260,9 @@ final notifications = await fastrelay.getNotificationFeedActivities(
   query: {'limit': 25},
 );
 
-print('unseen: ${notifications.unseen}, unread: ${notifications.unread}');
+print('unseen: ${notifications.unseenCount}, unread: ${notifications.unreadCount}');
 for (final group in notifications.groups) {
-  print('${group.group}: ${group.activityCount} activities');
+  print('${group.groupKey}: ${group.activityCount} activities');
 }
 ```
 

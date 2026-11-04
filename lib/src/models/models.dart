@@ -2,6 +2,7 @@ export 'activity.dart';
 export 'bookmark.dart';
 export 'comment.dart';
 export 'comment_reaction.dart';
+export 'connection_established.dart';
 export 'cursor_page.dart';
 export 'feed_activity_pin.dart';
 export 'feedback.dart';

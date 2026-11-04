@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart'
 import 'package:web_socket_client/web_socket_client.dart' as ws;
 
 import 'fastrelay_client.dart';
+import 'models/connection_established.dart';
 import 'models/realtime_event.dart';
 import 'models/video.dart';
 import 'utils.dart';
@@ -109,6 +110,9 @@ class FastRelayRealtime with WidgetsBindingObserver {
       StreamController<FastRelayRealtimeError>.broadcast();
   final StreamController<FastRelayVideoStatusEvent> _videoStatusController =
       StreamController<FastRelayVideoStatusEvent>.broadcast();
+  final StreamController<FastRelayConnectionEstablished>
+  _establishedController =
+      StreamController<FastRelayConnectionEstablished>.broadcast();
 
   FastRelayRealtimeSocket? _socket;
   StreamSubscription<String>? _messageSubscription;
@@ -131,7 +135,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
   bool _awaitingTokenRefresh = false;
   bool _invalidTokenRefreshAttempted = false;
   bool _hasConnectedAtLeastOnce = false;
-  bool _activeConnectAttemptWasReconnect = false;
+  bool _hasEstablishedAtLeastOnce = false;
 
   int _generation = 0;
   int _reconnectAttempt = 0;
@@ -145,6 +149,9 @@ class FastRelayRealtime with WidgetsBindingObserver {
 
   Stream<FastRelayVideoStatusEvent> get videoStatusEvents =>
       _videoStatusController.stream;
+
+  Stream<FastRelayConnectionEstablished> get connectionEstablished =>
+      _establishedController.stream;
 
   FastRelayConnectionState get connectionState => _connectionState;
 
@@ -230,6 +237,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     await _stateController.close();
     await _errorController.close();
     await _videoStatusController.close();
+    await _establishedController.close();
   }
 
   Stream<FastRelayRealtimeEvent> eventsForFeed(String feedId, {String? type}) {
@@ -382,7 +390,6 @@ class FastRelayRealtime with WidgetsBindingObserver {
 
     _stopDeadConnectionMonitor();
 
-    _activeConnectAttemptWasReconnect = isReconnect;
     final generation = ++_generation;
 
     _setConnectionState(
@@ -475,15 +482,9 @@ class FastRelayRealtime with WidgetsBindingObserver {
     _cancelReconnectTimer();
     _setConnectionState(FastRelayConnectionState.connected);
 
-    final wasReconnect = _activeConnectAttemptWasReconnect;
-    _activeConnectAttemptWasReconnect = false;
     _hasConnectedAtLeastOnce = true;
 
     _queueResubscribe();
-
-    if (wasReconnect) {
-      unawaited(_refreshSubscribedFeeds(generation));
-    }
   }
 
   void _onDisconnected(
@@ -590,6 +591,8 @@ class FastRelayRealtime with WidgetsBindingObserver {
 
     switch (type) {
       case 'connection.established':
+        _emitEstablished(normalized);
+        return;
       case 'heartbeat':
       case 'server.going_away':
         return;
@@ -763,6 +766,24 @@ class FastRelayRealtime with WidgetsBindingObserver {
     _stateController.add(state);
   }
 
+  void _emitEstablished(Map<String, dynamic> payload) {
+    final isReconnect = _hasEstablishedAtLeastOnce;
+    _hasEstablishedAtLeastOnce = true;
+    if (_establishedController.isClosed) {
+      return;
+    }
+    final serverTimeText = payload['serverTime']?.toString();
+    _establishedController.add(
+      FastRelayConnectionEstablished(
+        connectionId: payload['connectionId']?.toString() ?? '',
+        serverTime: serverTimeText == null
+            ? null
+            : DateTime.tryParse(serverTimeText)?.toUtc(),
+        isReconnect: isReconnect,
+      ),
+    );
+  }
+
   void _emitError(FastRelayRealtimeError error) {
     if (_errorController.isClosed || _isDisposed) {
       return;
@@ -872,33 +893,6 @@ class FastRelayRealtime with WidgetsBindingObserver {
 
     _socket?.close();
     _socket = null;
-  }
-
-  Future<void> _refreshSubscribedFeeds(int generation) async {
-    for (final feed in _desiredFeeds) {
-      if (_isDisposed || generation != _generation) {
-        return;
-      }
-
-      try {
-        final (group, id) = splitFeedId(feed);
-        await _client.getFeedActivityList(group, id, query: {'limit': 25});
-      } catch (error, stackTrace) {
-        if (generation != _generation || _isDisposed) {
-          return;
-        }
-        _emitError(
-          FastRelayRealtimeError(
-            code: 'RECONNECT_CATCHUP_FAILED',
-            message: 'Failed to refresh feed after reconnect.',
-            retryable: true,
-            details: {'feedId': feed},
-            cause: error,
-            stackTrace: stackTrace,
-          ),
-        );
-      }
-    }
   }
 
   Future<bool> _refreshToken() async {
