@@ -688,4 +688,307 @@ void main() {
       await socketFactory.dispose();
     });
   });
+
+  group('FastRelayRealtime chat', () {
+    late FakeSocketFactory socketFactory;
+    late FastRelayClient client;
+    late FastRelayRealtime realtime;
+
+    setUp(() async {
+      socketFactory = FakeSocketFactory();
+      client = FastRelayClient(
+        apiKey: 'key_123',
+        token: 'jwt_123',
+        baseUrl: 'https://api.fastrelay.io',
+        httpClient: CaptureClient((_) async => jsonResponse({'data': []})),
+      );
+      realtime = _buildRealtime(client, socketFactory);
+      client.realtime = realtime;
+      await realtime.connect();
+    });
+
+    tearDown(() async {
+      await realtime.dispose();
+      client.close();
+      await socketFactory.dispose();
+    });
+
+    Map<String, dynamic> messageNew({String eventId = 'evt_msg_1'}) => {
+      'type': 'message.new',
+      'conversationId': 'conv_1',
+      'eventId': eventId,
+      'createdAt': '2026-11-02T10:00:00Z',
+      'data': {
+        'message': {
+          'id': 'msg_1',
+          'conversationId': 'conv_1',
+          'seq': 7,
+          'type': 'regular',
+          'silent': false,
+          'userId': 'jane',
+          'text': 'hi',
+          'custom': {},
+          'createdAt': '2026-11-02T10:00:00Z',
+          'updatedAt': '2026-11-02T10:00:00Z',
+        },
+      },
+    };
+
+    test(
+      'chat event without feedId reaches chatEvents, not feed listeners',
+      () async {
+        final socket = socketFactory.sockets.single;
+        socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+
+        final chat = <FastRelayChatEvent>[];
+        final feedEvents = <FastRelayRealtimeEvent>[];
+        final feedStreamEvents = <FastRelayRealtimeEvent>[];
+        final chatSub = realtime.chatEvents.listen(chat.add);
+        final eventsSub = realtime.events.listen(feedEvents.add);
+        final feedSub = realtime
+            .eventsForFeed('timeline:john')
+            .listen(feedStreamEvents.add);
+        await _flush();
+
+        socket.emitJson(messageNew());
+        socket.emitJson({
+          'type': 'activity.created',
+          'feedId': 'timeline:john',
+          'eventId': 'evt_feed_1',
+          'createdAt': '2026-11-02T10:00:00Z',
+          'data': {'id': 'act_1'},
+        });
+        await _flush();
+
+        expect(chat, hasLength(1));
+        final event = chat.single;
+        expect(event.type, FastRelayChatEventType.messageNew);
+        expect(event.conversationId, 'conv_1');
+        expect(event.eventId, 'evt_msg_1');
+        expect(event.createdAt, DateTime.utc(2026, 11, 2, 10));
+        expect(event.message?.id, 'msg_1');
+        expect(event.message?.seq, 7);
+        expect(event.message?.text, 'hi');
+
+        expect(feedEvents.map((e) => e.eventId), ['evt_feed_1']);
+        expect(feedStreamEvents.map((e) => e.eventId), ['evt_feed_1']);
+
+        await chatSub.cancel();
+        await eventsSub.cancel();
+        await feedSub.cancel();
+      },
+    );
+
+    test('duplicate chat eventId is dropped', () async {
+      final socket = socketFactory.sockets.single;
+      socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+
+      final chat = <FastRelayChatEvent>[];
+      final sub = realtime.chatEvents.listen(chat.add);
+
+      socket.emitJson(messageNew(eventId: 'evt_dup'));
+      socket.emitJson(messageNew(eventId: 'evt_dup'));
+      await _flush();
+
+      expect(chat, hasLength(1));
+      await sub.cancel();
+    });
+
+    test(
+      'presence.changed without conversationId and unknown types are delivered',
+      () async {
+        final socket = socketFactory.sockets.single;
+        socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+
+        final chat = <FastRelayChatEvent>[];
+        final sub = realtime.chatEvents.listen(chat.add);
+
+        socket.emitJson({
+          'type': 'presence.changed',
+          'eventId': 'evt_p1',
+          'createdAt': '2026-11-02T10:00:00Z',
+          'data': {
+            'userId': 'jane',
+            'online': false,
+            'lastActiveAt': '2026-11-02T09:59:00Z',
+          },
+        });
+        socket.emitJson({
+          'type': 'reaction.future',
+          'conversationId': 'conv_1',
+          'eventId': 'evt_u1',
+          'createdAt': '2026-11-02T10:00:00Z',
+          'data': {'emoji': 'wave', 'count': 2},
+        });
+        await _flush();
+
+        expect(chat, hasLength(2));
+        final presence = chat.first;
+        expect(presence.type, FastRelayChatEventType.presenceChanged);
+        expect(presence.conversationId, isNull);
+        expect(presence.userId, 'jane');
+        expect(presence.online, isFalse);
+        expect(presence.lastActiveAt, DateTime.utc(2026, 11, 2, 9, 59));
+
+        final unknown = chat.last;
+        expect(unknown.type, 'reaction.future');
+        expect(unknown.data, {'emoji': 'wave', 'count': 2});
+        expect(unknown.message, isNull);
+
+        await sub.cancel();
+      },
+    );
+
+    test('malformed typed payload does not break the socket loop', () async {
+      final socket = socketFactory.sockets.single;
+      socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+
+      final chat = <FastRelayChatEvent>[];
+      final sub = realtime.chatEvents.listen(chat.add);
+
+      socket.emitJson({
+        'type': 'message.new',
+        'conversationId': 'conv_1',
+        'eventId': 'evt_bad',
+        'createdAt': '2026-11-02T10:00:00Z',
+        'data': {'message': 'not-an-object'},
+      });
+      socket.emitJson(messageNew(eventId: 'evt_after'));
+      await _flush();
+
+      expect(chat.map((e) => e.eventId), ['evt_bad', 'evt_after']);
+      expect(chat.first.message, isNull);
+      expect(chat.last.message?.id, 'msg_1');
+
+      await sub.cancel();
+    });
+
+    test('client chat messages serialize exactly', () async {
+      final socket = socketFactory.sockets.single;
+      socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+      await _flush();
+      socket.sentMessages.clear();
+
+      expect(realtime.startTyping('conv_1'), isTrue);
+      expect(realtime.stopTyping('conv_1'), isTrue);
+      expect(realtime.markDelivered('conv_1', 5), isTrue);
+      expect(realtime.markRead('conv_1', seq: 6), isTrue);
+      expect(realtime.markRead('conv_1'), isTrue);
+      realtime.startPresence();
+
+      expect(socket.sentMessages, [
+        '{"type":"typing.start","conversationId":"conv_1"}',
+        '{"type":"typing.stop","conversationId":"conv_1"}',
+        '{"type":"message.delivered","conversationId":"conv_1","seq":5}',
+        '{"type":"conversation.read","conversationId":"conv_1","seq":6}',
+        '{"type":"conversation.read","conversationId":"conv_1"}',
+        '{"type":"presence.start"}',
+      ]);
+    });
+
+    test('client chat messages validate input', () async {
+      final socket = socketFactory.sockets.single;
+      socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+      await _flush();
+      socket.sentMessages.clear();
+
+      expect(() => realtime.startTyping('  '), throwsArgumentError);
+      expect(() => realtime.markDelivered('conv_1', 0), throwsArgumentError);
+      expect(() => realtime.markRead('conv_1', seq: -1), throwsArgumentError);
+      expect(socket.sentMessages, isEmpty);
+    });
+
+    test('typing while disconnected returns false and sends nothing', () async {
+      final socket = socketFactory.sockets.single;
+
+      expect(
+        realtime.connectionState,
+        isNot(FastRelayConnectionState.connected),
+      );
+      expect(realtime.startTyping('conv_1'), isFalse);
+      expect(realtime.markDelivered('conv_1', 1), isFalse);
+      expect(realtime.markRead('conv_1'), isFalse);
+      expect(socket.sentMessages, isEmpty);
+
+      socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+      await _flush();
+
+      // Nothing was queued while disconnected.
+      expect(
+        socket.sentJsonMessages.where(
+          (m) => (m['type'] as String).startsWith('typing'),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('startPresence sends now and again after a reconnect', () async {
+      final socket1 = socketFactory.sockets.single;
+      socket1.emitConnection(FastRelayRealtimeSocketStatus.connected);
+      await _flush();
+
+      realtime.startPresence();
+      expect(
+        socket1.sentJsonMessages.where((m) => m['type'] == 'presence.start'),
+        hasLength(1),
+      );
+
+      socket1.emitConnection(
+        FastRelayRealtimeSocketStatus.disconnected,
+        closeCode: 1006,
+      );
+      await _flush(const Duration(milliseconds: 80));
+      expect(socketFactory.sockets, hasLength(2));
+
+      final socket2 = socketFactory.sockets.last;
+      socket2.emitConnection(FastRelayRealtimeSocketStatus.connected);
+      await _flush();
+
+      expect(
+        socket2.sentJsonMessages.where((m) => m['type'] == 'presence.start'),
+        hasLength(1),
+      );
+    });
+
+    test('startPresence while disconnected is sent once connected', () async {
+      final socket = socketFactory.sockets.single;
+      realtime.startPresence();
+      expect(socket.sentMessages, isEmpty);
+
+      socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+      await _flush();
+
+      expect(
+        socket.sentJsonMessages.where((m) => m['type'] == 'presence.start'),
+        hasLength(1),
+      );
+    });
+
+    test('server error for a chat message is routed to errors', () async {
+      final socket = socketFactory.sockets.single;
+      socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+
+      final errors = <FastRelayRealtimeError>[];
+      final chat = <FastRelayChatEvent>[];
+      final errorSub = realtime.errors.listen(errors.add);
+      final chatSub = realtime.chatEvents.listen(chat.add);
+
+      socket.emitJson({
+        'type': 'error',
+        'error': {
+          'code': 'FORBIDDEN',
+          'message': 'Not a member.',
+          'hint': 'Join the conversation first.',
+        },
+      });
+      await _flush();
+
+      expect(errors.single.code, 'FORBIDDEN');
+      expect(errors.single.hint, 'Join the conversation first.');
+      expect(chat, isEmpty);
+
+      await errorSub.cancel();
+      await chatSub.cancel();
+    });
+  });
 }

@@ -9,6 +9,7 @@ import 'package:web_socket_client/web_socket_client.dart' as ws;
 
 import 'fastrelay_client.dart';
 import 'models/connection_established.dart';
+import 'models/chat_event.dart';
 import 'models/realtime_event.dart';
 import 'models/video.dart';
 import 'utils.dart';
@@ -110,6 +111,8 @@ class FastRelayRealtime with WidgetsBindingObserver {
       StreamController<FastRelayRealtimeError>.broadcast();
   final StreamController<FastRelayVideoStatusEvent> _videoStatusController =
       StreamController<FastRelayVideoStatusEvent>.broadcast();
+  final StreamController<FastRelayChatEvent> _chatEventController =
+      StreamController<FastRelayChatEvent>.broadcast();
   final StreamController<FastRelayConnectionEstablished>
   _establishedController =
       StreamController<FastRelayConnectionEstablished>.broadcast();
@@ -136,6 +139,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
   bool _invalidTokenRefreshAttempted = false;
   bool _hasConnectedAtLeastOnce = false;
   bool _hasEstablishedAtLeastOnce = false;
+  bool _presenceRequested = false;
 
   int _generation = 0;
   int _reconnectAttempt = 0;
@@ -150,6 +154,14 @@ class FastRelayRealtime with WidgetsBindingObserver {
   Stream<FastRelayVideoStatusEvent> get videoStatusEvents =>
       _videoStatusController.stream;
 
+  /// Chat events (`message.new`, `typing.start`, `presence.changed`, ...).
+  /// These carry no `feedId` and never appear on [events] or feed streams.
+  /// Events are deduplicated by `eventId`; unknown types are delivered too.
+  Stream<FastRelayChatEvent> get chatEvents => _chatEventController.stream;
+
+  /// Emits on every successful (re)connect. Its `serverTime` is the
+  /// `syncChat` anchor: keep it on the first connect, and on a reconnect call
+  /// `syncChat(since: anchor)` and store the response's `serverTime`.
   Stream<FastRelayConnectionEstablished> get connectionEstablished =>
       _establishedController.stream;
 
@@ -199,6 +211,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     if (clearSubscriptions) {
       _desiredFeeds.clear();
       _clearFeedStreams();
+      _presenceRequested = false;
     }
 
     _setConnectionState(FastRelayConnectionState.disconnected);
@@ -212,6 +225,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     _isDisposed = true;
     _shouldBeConnected = false;
     _lifecycleSuspended = false;
+    _presenceRequested = false;
 
     _cancelReconnectTimer();
     _cancelSubscribeBatch();
@@ -237,7 +251,72 @@ class FastRelayRealtime with WidgetsBindingObserver {
     await _stateController.close();
     await _errorController.close();
     await _videoStatusController.close();
+    await _chatEventController.close();
     await _establishedController.close();
+  }
+
+  /// Tells the other members that the user started typing. Fire-and-forget:
+  /// returns `false` without queueing when not connected.
+  bool startTyping(String conversationId) {
+    return _sendChatMessage('typing.start', conversationId);
+  }
+
+  /// Tells the other members that the user stopped typing. Fire-and-forget:
+  /// returns `false` without queueing when not connected.
+  bool stopTyping(String conversationId) {
+    return _sendChatMessage('typing.stop', conversationId);
+  }
+
+  /// Marks messages up to [seq] (must be > 0) delivered. Fire-and-forget:
+  /// returns `false` without queueing when not connected.
+  bool markDelivered(String conversationId, int seq) {
+    return _sendChatMessage('message.delivered', conversationId, seq: seq);
+  }
+
+  /// Marks the conversation read up to [seq] (must be > 0), or up to the
+  /// latest message when omitted. Fire-and-forget: returns `false` without
+  /// queueing when not connected — fall back to
+  /// `FastRelayClient.markConversationRead`.
+  bool markRead(String conversationId, {int? seq}) {
+    return _sendChatMessage('conversation.read', conversationId, seq: seq);
+  }
+
+  /// Opts this connection into presence tracking. Sent now when connected
+  /// and re-sent after every reconnect. There is no stop message: the user
+  /// goes offline when the connection closes. Cleared by [dispose] and by
+  /// `disconnect(clearSubscriptions: true)`.
+  void startPresence() {
+    if (_isDisposed) {
+      return;
+    }
+    _presenceRequested = true;
+    if (_connectionState == FastRelayConnectionState.connected) {
+      _send({'type': 'presence.start'});
+    }
+  }
+
+  bool _sendChatMessage(String type, String conversationId, {int? seq}) {
+    final normalizedConversationId = conversationId.trim();
+    if (normalizedConversationId.isEmpty) {
+      throw ArgumentError.value(
+        conversationId,
+        'conversationId',
+        'must not be blank.',
+      );
+    }
+    if (seq != null && seq <= 0) {
+      throw ArgumentError.value(seq, 'seq', 'must be greater than 0.');
+    }
+
+    if (_isDisposed || _connectionState != FastRelayConnectionState.connected) {
+      return false;
+    }
+
+    return _send({
+      'type': type,
+      'conversationId': normalizedConversationId,
+      'seq': ?seq,
+    });
   }
 
   Stream<FastRelayRealtimeEvent> eventsForFeed(String feedId, {String? type}) {
@@ -485,6 +564,10 @@ class FastRelayRealtime with WidgetsBindingObserver {
     _hasConnectedAtLeastOnce = true;
 
     _queueResubscribe();
+
+    if (_presenceRequested) {
+      _send({'type': 'presence.start'});
+    }
   }
 
   void _onDisconnected(
@@ -612,6 +695,17 @@ class FastRelayRealtime with WidgetsBindingObserver {
         return;
     }
 
+    if (type.isEmpty || _isControlMessageType(type)) {
+      return;
+    }
+
+    // Feed events carry a `feedId`; chat events (`ChatEvent` on the server)
+    // never do.
+    if (normalized['feedId'] == null) {
+      _handleChatEvent(normalized);
+      return;
+    }
+
     final event = FastRelayRealtimeEvent.fromJson(normalized);
     if (event.type.isEmpty || event.feedId.isEmpty) {
       return;
@@ -622,6 +716,45 @@ class FastRelayRealtime with WidgetsBindingObserver {
     }
 
     _dispatchEvent(event);
+  }
+
+  static bool _isControlMessageType(String type) {
+    return type.startsWith('subscribe.') ||
+        type.startsWith('unsubscribe.') ||
+        type.startsWith('video.');
+  }
+
+  void _handleChatEvent(Map<String, dynamic> payload) {
+    if (_isDisposed || _chatEventController.isClosed) {
+      return;
+    }
+
+    final FastRelayChatEvent event;
+    try {
+      event = FastRelayChatEvent.fromJson(payload);
+    } catch (error, stackTrace) {
+      _emitError(
+        FastRelayRealtimeError(
+          code: 'CHAT_EVENT_PARSE_FAILED',
+          message: 'Failed to parse realtime chat event.',
+          retryable: true,
+          details: payload,
+          cause: error,
+          stackTrace: stackTrace,
+        ),
+      );
+      return;
+    }
+
+    if (event.type.isEmpty) {
+      return;
+    }
+
+    if (event.eventId.isNotEmpty && !_trackEventId(event.eventId)) {
+      return;
+    }
+
+    _chatEventController.add(event);
   }
 
   void _dispatchVideoStatus(Map<String, dynamic> payload) {
@@ -707,14 +840,15 @@ class FastRelayRealtime with WidgetsBindingObserver {
     }
   }
 
-  void _send(Map<String, dynamic> payload) {
+  bool _send(Map<String, dynamic> payload) {
     final socket = _socket;
     if (socket == null || _isDisposed) {
-      return;
+      return false;
     }
 
     try {
       socket.send(jsonEncode(payload));
+      return true;
     } catch (error, stackTrace) {
       _emitError(
         FastRelayRealtimeError(
@@ -726,6 +860,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
           details: payload,
         ),
       );
+      return false;
     }
   }
 

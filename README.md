@@ -1,11 +1,12 @@
 # fastrelay Feed Flutter SDK
 
-Flutter SDK for [fastrelay](https://fastrelay.io) activity feeds — feeds, activities, reactions, comments, polls, video uploads, moderation, and realtime updates over WebSocket.
+Flutter SDK for [fastrelay](https://fastrelay.io) activity feeds and chat — feeds, activities, reactions, comments, polls, video uploads, moderation, direct and group chat, and realtime updates over WebSocket.
 
 - Feed-first API: `fastrelay.feed(group, id)`
 - Client-only by design: user (JWT) auth, no server secrets in the app
 - Idiomatic Dart `camelCase` payloads
 - Realtime subscriptions with automatic reconnect + token refresh
+- Chat: direct/group conversations, messages, read receipts, typing, presence and reconnect sync on the same user, token and socket
 - Polling fallback for non-realtime environments
 - Direct-to-storage image uploads (presigned PUT) and video uploads (tus / Cloudflare Stream)
 - Structured `FastRelayApiError` with rate-limit metadata
@@ -19,6 +20,7 @@ Flutter SDK for [fastrelay](https://fastrelay.io) activity feeds — feeds, acti
 - [Feeds](#feeds)
 - [Activities, reactions, comments](#activities-reactions-comments)
 - [Realtime](#realtime)
+- [Chat](#chat)
 - [Polling fallback](#polling-fallback)
 - [File upload](#file-upload)
 - [Video upload](#video-upload)
@@ -40,7 +42,7 @@ dependencies:
   fastrelay_feed_sdk:
     git:
       url: https://github.com/The-Nexus-Collective/fastrelay-flutter-sdk
-      ref: v0.5.2
+      ref: v0.6.0
 ```
 
 Then:
@@ -195,6 +197,137 @@ realtime.connectionEstablished
 ```
 
 By default, the connection suspends on `AppLifecycleState.paused` and resumes on `resumed`. Pass `maintainBackgroundConnection: true` to `connectUser` to keep it open in the background.
+
+## Chat
+
+Chat runs on the same user, JWT and realtime socket as feeds.
+
+### Conversations and messages
+
+```dart
+// Direct conversations are idempotent: creating one that exists returns it.
+final dm = await fastrelay.createConversation(kind: 'direct', members: ['jane']);
+
+final team = await fastrelay.createConversation(
+  type: 'messaging',
+  members: ['jane', 'amy'],
+  name: 'Launch',
+  presenceEnabled: true,
+);
+
+final inbox = await fastrelay.queryConversations(
+  filter: const FastRelayConversationFilter(hasUnread: true),
+  sort: 'lastMessageAt',
+  limit: 25,
+);
+
+final message = await fastrelay.sendMessage(
+  team.id,
+  text: 'Ship it?',
+  replyToId: previous.id, // optional quote-reply
+  options: const FastRelayRequestOptions(idempotencyKey: 'local-id-123'),
+);
+
+// Messages come back in ascending `seq`. Page backwards with `nextCursor`.
+final latest = await fastrelay.listMessages(team.id, limit: 50);
+final older = await fastrelay.listMessages(team.id, cursor: latest.nextCursor);
+final aroundJump = await fastrelay.listMessages(team.id, around: 120, limit: 30);
+
+await fastrelay.updateMessage(message.id, text: 'Ship it!');
+await fastrelay.deleteMessage(message.id);
+
+final totals = await fastrelay.markConversationRead(team.id); // or seq: N
+final unread = await fastrelay.getUnreadTotals();
+```
+
+Members: `listConversationMembers`, `addConversationMembers`, `updateConversationMember` (role / `restriction: 'banned' | 'muted' | 'none'`) and `removeConversationMember` (pass your own id to leave). Conversations: `getConversation`, `updateConversation`, `truncateConversation`, `deleteConversation`. The same calls are grouped under `fastrelay.conversations`, `fastrelay.messages` and `fastrelay.chat`.
+
+### Realtime chat events
+
+Chat events arrive on `realtime.chatEvents` — never on the feed streams. Each event has `type`, `conversationId` (null for `presence.changed` and `unread.updated`), `eventId`, `createdAt`, the raw `data`, and typed accessors decoded with the REST models:
+
+```dart
+realtime.chatEvents.listen((event) {
+  switch (event.type) {
+    case FastRelayChatEventType.messageNew:
+    case FastRelayChatEventType.messageUpdated:
+    case FastRelayChatEventType.messageDeleted:
+      upsertMessage(event.message!);
+    case FastRelayChatEventType.conversationUpdated:
+      upsertConversation(event.conversation!); // realtime omits `members`
+    case FastRelayChatEventType.memberAdded:
+      print('${event.userIds} joined ${event.conversationId}');
+    case FastRelayChatEventType.receiptRead:
+      print('${event.userId} read up to ${event.lastReadSeq}');
+    case FastRelayChatEventType.typingStart:
+      showTyping(event.conversationId!, event.userId!);
+    case FastRelayChatEventType.presenceChanged:
+      print('${event.userId} online=${event.online}');
+    case FastRelayChatEventType.unreadUpdated:
+      setBadge(event.totals!.totalUnread);
+    default:
+      print('unhandled ${event.type}: ${event.data}'); // forward compatible
+  }
+});
+```
+
+Also: `conversation.truncated`, `conversation.deleted`, `member.removed` (`userId`), `member.updated` (`member`), `receipt.delivered`, `typing.stop`.
+
+### Typing, receipts and presence
+
+These are fire-and-forget socket messages. They return `false` (and are not queued) while the socket is not connected — fall back to REST where it matters:
+
+```dart
+realtime.startTyping(conversationId);
+realtime.stopTyping(conversationId);
+realtime.markDelivered(conversationId, message.seq);
+if (!realtime.markRead(conversationId, seq: message.seq)) {
+  await fastrelay.markConversationRead(conversationId, seq: message.seq);
+}
+
+// Opt this connection into presence. Re-sent automatically after every
+// reconnect; you go offline when the connection closes.
+realtime.startPresence();
+```
+
+Server-side rejections (not a member, invalid seq, ...) arrive on `realtime.errors`. Debouncing typing and batching read receipts is left to the app.
+
+### Catching up after a reconnect
+
+Every successful (re)connect emits the server's `connection.established` on `realtime.connectionEstablished`. Keep its `serverTime` from the first connect as the sync anchor; after a reconnect, ask for everything that changed since and move the anchor forward:
+
+```dart
+DateTime? anchor;
+
+realtime.connectionEstablished.listen((established) async {
+  if (anchor == null || !established.isReconnect) {
+    anchor = established.serverTime;
+    return;
+  }
+  final sync = await fastrelay.syncChat(
+    since: anchor!,
+    conversationIds: localConversationIds,
+  );
+  anchor = sync.serverTime;
+  if (sync.reloadAll) {
+    // Too much changed: reload via queryConversations.
+  }
+  // Apply sync.conversations / sync.messages, drop sync.removedConversationIds,
+  // reload history for sync.reloadConversationIds, show sync.unread.
+});
+```
+
+### Blocking and flagging
+
+Blocking reuses the mute API with `type: 'block'`; it hides the user's messages and suppresses typing and presence in both directions. Messages are flagged with the existing flag API:
+
+```dart
+await fastrelay.createMute('spammer', type: 'block');
+await fastrelay.listMutes(type: 'block');
+await fastrelay.removeMute('spammer', type: 'block');
+
+await fastrelay.createFlag('message', message.id, reason: 'spam');
+```
 
 ## Polling fallback
 

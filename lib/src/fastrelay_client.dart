@@ -44,6 +44,9 @@ class FastRelayClient {
     videos = FastRelayVideosApi(this);
     feedback = FastRelayFeedbackApi(this);
     moderation = FastRelayModerationApi(this);
+    conversations = FastRelayConversationsApi(this);
+    messages = FastRelayMessagesApi(this);
+    chat = FastRelayChatApi(this);
   }
 
   final http.Client _httpClient;
@@ -68,6 +71,9 @@ class FastRelayClient {
   late final FastRelayVideosApi videos;
   late final FastRelayFeedbackApi feedback;
   late final FastRelayModerationApi moderation;
+  late final FastRelayConversationsApi conversations;
+  late final FastRelayMessagesApi messages;
+  late final FastRelayChatApi chat;
 
   FastRelayFeed feed(String group, String id) => FastRelayFeed(this, group, id);
 
@@ -1053,6 +1059,8 @@ class FastRelayClient {
     return FastRelayFeedback.fromJson(_asMap(response));
   }
 
+  /// Flags content for moderation. [targetType] is e.g. `'activity'`,
+  /// `'comment'`, `'user'` or `'message'` (chat messages).
   Future<FastRelayModerationFlag> createFlag(
     String targetType,
     String targetId, {
@@ -1085,6 +1093,10 @@ class FastRelayClient {
     );
   }
 
+  /// Mutes [userId]. [type] is `'personal'` (default) or `'block'`. A block
+  /// hides the user like a personal mute (feeds and chat messages) and also
+  /// suppresses chat typing and presence in both directions. Pass the same
+  /// [type] to [removeMute] / [listMutes] to unblock or list blocks.
   Future<FastRelayUserMute> createMute(
     String userId, {
     String type = 'personal',
@@ -1147,6 +1159,334 @@ class FastRelayClient {
       cursor: cursor,
       options: options,
     );
+  }
+
+  /// Creates a conversation. [kind] is `'group'` (server default) or
+  /// `'direct'`; creating a direct conversation that already exists returns
+  /// the existing one. [members] are the other participants' user ids.
+  Future<FastRelayConversation> createConversation({
+    String? kind,
+    String? type,
+    List<String> members = const [],
+    String? name,
+    String? image,
+    Map<String, dynamic>? custom,
+    bool? presenceEnabled,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/conversations',
+      body: {
+        'kind': ?kind,
+        'type': ?type,
+        'members': members,
+        'name': ?name,
+        'image': ?image,
+        'custom': ?custom,
+        'presenceEnabled': ?presenceEnabled,
+      },
+      options: options,
+    );
+    return FastRelayConversation.fromJson(_asMap(response));
+  }
+
+  /// Lists the user's conversations. [sort] is `'lastMessageAt'` (default),
+  /// `'createdAt'`, `'updatedAt'` or `'unreadCount'`; [direction] is `'asc'`
+  /// or `'desc'` (default).
+  Future<CursorPage<FastRelayConversation>> queryConversations({
+    FastRelayConversationFilter? filter,
+    String? sort,
+    String? direction,
+    int? limit,
+    String? cursor,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/conversations/query',
+      body: {
+        if (filter != null) 'filter': filter.toJson(),
+        'sort': ?sort,
+        'direction': ?direction,
+        'limit': ?limit,
+        'cursor': ?cursor,
+      },
+      options: options,
+    );
+    return CursorPage<FastRelayConversation>.fromJson(
+      _asMap(response),
+      FastRelayConversation.fromJson,
+    );
+  }
+
+  Future<FastRelayConversation> getConversation(
+    String conversationId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'GET',
+      path: '/v1/conversations/${Uri.encodeComponent(conversationId)}',
+      options: options,
+    );
+    return FastRelayConversation.fromJson(_asMap(response));
+  }
+
+  /// Updates a conversation. Only the provided fields are sent.
+  Future<FastRelayConversation> updateConversation(
+    String conversationId, {
+    String? name,
+    String? image,
+    Map<String, dynamic>? custom,
+    bool? presenceEnabled,
+    bool? frozen,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'PATCH',
+      path: '/v1/conversations/${Uri.encodeComponent(conversationId)}',
+      body: {
+        'name': ?name,
+        'image': ?image,
+        'custom': ?custom,
+        'presenceEnabled': ?presenceEnabled,
+        'frozen': ?frozen,
+      },
+      options: options,
+    );
+    return FastRelayConversation.fromJson(_asMap(response));
+  }
+
+  Future<void> deleteConversation(
+    String conversationId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    await _request(
+      method: 'DELETE',
+      path: '/v1/conversations/${Uri.encodeComponent(conversationId)}',
+      options: options,
+    );
+  }
+
+  /// Hides all current messages from the conversation's history. The server
+  /// posts a system message unless [systemMessage] is `false`.
+  Future<FastRelayConversation> truncateConversation(
+    String conversationId, {
+    bool? systemMessage,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/conversations/${Uri.encodeComponent(conversationId)}/truncate',
+      body: systemMessage == null ? null : {'systemMessage': systemMessage},
+      options: options,
+    );
+    return FastRelayConversation.fromJson(_asMap(response));
+  }
+
+  Future<CursorPage<FastRelayConversationMember>> listConversationMembers(
+    String conversationId, {
+    int? limit,
+    String? cursor,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'GET',
+      path: '/v1/conversations/${Uri.encodeComponent(conversationId)}/members',
+      query: {'limit': limit, 'cursor': cursor},
+      options: options,
+    );
+    return CursorPage<FastRelayConversationMember>.fromJson(
+      _asMap(response),
+      FastRelayConversationMember.fromJson,
+    );
+  }
+
+  Future<FastRelayConversation> addConversationMembers(
+    String conversationId,
+    List<String> userIds, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/conversations/${Uri.encodeComponent(conversationId)}/members',
+      body: {'userIds': userIds},
+      options: options,
+    );
+    return FastRelayConversation.fromJson(_asMap(response));
+  }
+
+  /// Changes a member's [role] (`'owner'`, `'moderator'`, `'member'`) or
+  /// [restriction] (`'banned'`, `'muted'`, `'none'` to lift it). Only the
+  /// provided fields are sent.
+  Future<FastRelayConversationMember> updateConversationMember(
+    String conversationId,
+    String userId, {
+    String? role,
+    String? restriction,
+    DateTime? restrictionExpiresAt,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'PATCH',
+      path:
+          '/v1/conversations/${Uri.encodeComponent(conversationId)}/members/${Uri.encodeComponent(userId)}',
+      body: {
+        'role': ?role,
+        'restriction': ?restriction,
+        if (restrictionExpiresAt != null)
+          'restrictionExpiresAt': restrictionExpiresAt
+              .toUtc()
+              .toIso8601String(),
+      },
+      options: options,
+    );
+    return FastRelayConversationMember.fromJson(_asMap(response));
+  }
+
+  /// Removes [userId] from the conversation. Pass the current user's id to
+  /// leave it.
+  Future<void> removeConversationMember(
+    String conversationId,
+    String userId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    await _request(
+      method: 'DELETE',
+      path:
+          '/v1/conversations/${Uri.encodeComponent(conversationId)}/members/${Uri.encodeComponent(userId)}',
+      options: options,
+    );
+  }
+
+  /// Sends a message. Pass `FastRelayRequestOptions(idempotencyKey: ...)` to
+  /// make retries safe.
+  Future<FastRelayMessage> sendMessage(
+    String conversationId, {
+    String? text,
+    Map<String, dynamic>? custom,
+    String? replyToId,
+    bool? silent,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/conversations/${Uri.encodeComponent(conversationId)}/messages',
+      body: {
+        'text': ?text,
+        'custom': ?custom,
+        'replyToId': ?replyToId,
+        'silent': ?silent,
+      },
+      options: options,
+    );
+    return FastRelayMessage.fromJson(_asMap(response));
+  }
+
+  /// Lists messages in ascending `seq` order.
+  ///
+  /// [cursor] is an exclusive message seq (pass a page's `nextCursor`):
+  /// [direction] `'older'` (default) pages back from it, `'newer'` pages
+  /// forward. [around] returns a window of [limit] messages centred on that
+  /// seq.
+  Future<CursorPage<FastRelayMessage>> listMessages(
+    String conversationId, {
+    String? cursor,
+    String? direction,
+    int? around,
+    int? limit,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'GET',
+      path: '/v1/conversations/${Uri.encodeComponent(conversationId)}/messages',
+      query: {
+        'cursor': cursor,
+        'direction': direction,
+        'around': around,
+        'limit': limit,
+      },
+      options: options,
+    );
+    return CursorPage<FastRelayMessage>.fromJson(
+      _asMap(response),
+      FastRelayMessage.fromJson,
+    );
+  }
+
+  /// Edits a message. Only the provided fields are sent.
+  Future<FastRelayMessage> updateMessage(
+    String messageId, {
+    String? text,
+    Map<String, dynamic>? custom,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'PATCH',
+      path: '/v1/messages/${Uri.encodeComponent(messageId)}',
+      body: {'text': ?text, 'custom': ?custom},
+      options: options,
+    );
+    return FastRelayMessage.fromJson(_asMap(response));
+  }
+
+  Future<void> deleteMessage(
+    String messageId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    await _request(
+      method: 'DELETE',
+      path: '/v1/messages/${Uri.encodeComponent(messageId)}',
+      options: options,
+    );
+  }
+
+  /// Marks the conversation read up to [seq], or up to the latest message
+  /// when [seq] is omitted. Returns the user's updated unread totals.
+  Future<FastRelayUnreadTotals> markConversationRead(
+    String conversationId, {
+    int? seq,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/conversations/${Uri.encodeComponent(conversationId)}/read',
+      body: seq == null ? null : {'seq': seq},
+      options: options,
+    );
+    return FastRelayUnreadTotals.fromJson(_asMap(response));
+  }
+
+  Future<FastRelayUnreadTotals> getUnreadTotals({
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'GET',
+      path: '/v1/chat/unread',
+      options: options,
+    );
+    return FastRelayUnreadTotals.fromJson(_asMap(response));
+  }
+
+  /// Fetches chat changes since [since] — the `serverTime` from
+  /// `connection.established` or from the previous sync. [conversationIds]
+  /// are the conversations held locally; those the user lost access to come
+  /// back in `removedConversationIds`.
+  Future<FastRelayChatSync> syncChat({
+    required DateTime since,
+    List<String> conversationIds = const [],
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/chat/sync',
+      body: {
+        'since': since.toUtc().toIso8601String(),
+        'conversationIds': conversationIds,
+      },
+      options: options,
+    );
+    return FastRelayChatSync.fromJson(_asMap(response));
   }
 
   /// Runs [send]; on a 401 with a user token and a configured `tokenProvider`,
@@ -1825,6 +2165,253 @@ class FastRelayModerationApi {
       type: type,
       limit: limit,
       cursor: cursor,
+      options: options,
+    );
+  }
+}
+
+class FastRelayConversationsApi {
+  const FastRelayConversationsApi(this._client);
+
+  final FastRelayClient _client;
+
+  Future<FastRelayConversation> create({
+    String? kind,
+    String? type,
+    List<String> members = const [],
+    String? name,
+    String? image,
+    Map<String, dynamic>? custom,
+    bool? presenceEnabled,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.createConversation(
+      kind: kind,
+      type: type,
+      members: members,
+      name: name,
+      image: image,
+      custom: custom,
+      presenceEnabled: presenceEnabled,
+      options: options,
+    );
+  }
+
+  Future<CursorPage<FastRelayConversation>> query({
+    FastRelayConversationFilter? filter,
+    String? sort,
+    String? direction,
+    int? limit,
+    String? cursor,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.queryConversations(
+      filter: filter,
+      sort: sort,
+      direction: direction,
+      limit: limit,
+      cursor: cursor,
+      options: options,
+    );
+  }
+
+  Future<FastRelayConversation> get(
+    String conversationId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.getConversation(conversationId, options: options);
+  }
+
+  Future<FastRelayConversation> update(
+    String conversationId, {
+    String? name,
+    String? image,
+    Map<String, dynamic>? custom,
+    bool? presenceEnabled,
+    bool? frozen,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.updateConversation(
+      conversationId,
+      name: name,
+      image: image,
+      custom: custom,
+      presenceEnabled: presenceEnabled,
+      frozen: frozen,
+      options: options,
+    );
+  }
+
+  Future<void> delete(
+    String conversationId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.deleteConversation(conversationId, options: options);
+  }
+
+  Future<FastRelayConversation> truncate(
+    String conversationId, {
+    bool? systemMessage,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.truncateConversation(
+      conversationId,
+      systemMessage: systemMessage,
+      options: options,
+    );
+  }
+
+  Future<CursorPage<FastRelayConversationMember>> listMembers(
+    String conversationId, {
+    int? limit,
+    String? cursor,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.listConversationMembers(
+      conversationId,
+      limit: limit,
+      cursor: cursor,
+      options: options,
+    );
+  }
+
+  Future<FastRelayConversation> addMembers(
+    String conversationId,
+    List<String> userIds, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.addConversationMembers(
+      conversationId,
+      userIds,
+      options: options,
+    );
+  }
+
+  Future<FastRelayConversationMember> updateMember(
+    String conversationId,
+    String userId, {
+    String? role,
+    String? restriction,
+    DateTime? restrictionExpiresAt,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.updateConversationMember(
+      conversationId,
+      userId,
+      role: role,
+      restriction: restriction,
+      restrictionExpiresAt: restrictionExpiresAt,
+      options: options,
+    );
+  }
+
+  Future<void> removeMember(
+    String conversationId,
+    String userId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.removeConversationMember(
+      conversationId,
+      userId,
+      options: options,
+    );
+  }
+
+  Future<FastRelayUnreadTotals> markRead(
+    String conversationId, {
+    int? seq,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.markConversationRead(
+      conversationId,
+      seq: seq,
+      options: options,
+    );
+  }
+}
+
+class FastRelayMessagesApi {
+  const FastRelayMessagesApi(this._client);
+
+  final FastRelayClient _client;
+
+  Future<FastRelayMessage> send(
+    String conversationId, {
+    String? text,
+    Map<String, dynamic>? custom,
+    String? replyToId,
+    bool? silent,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.sendMessage(
+      conversationId,
+      text: text,
+      custom: custom,
+      replyToId: replyToId,
+      silent: silent,
+      options: options,
+    );
+  }
+
+  Future<CursorPage<FastRelayMessage>> list(
+    String conversationId, {
+    String? cursor,
+    String? direction,
+    int? around,
+    int? limit,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.listMessages(
+      conversationId,
+      cursor: cursor,
+      direction: direction,
+      around: around,
+      limit: limit,
+      options: options,
+    );
+  }
+
+  Future<FastRelayMessage> update(
+    String messageId, {
+    String? text,
+    Map<String, dynamic>? custom,
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.updateMessage(
+      messageId,
+      text: text,
+      custom: custom,
+      options: options,
+    );
+  }
+
+  Future<void> delete(
+    String messageId, {
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.deleteMessage(messageId, options: options);
+  }
+}
+
+class FastRelayChatApi {
+  const FastRelayChatApi(this._client);
+
+  final FastRelayClient _client;
+
+  Future<FastRelayUnreadTotals> getUnreadTotals({
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.getUnreadTotals(options: options);
+  }
+
+  Future<FastRelayChatSync> sync({
+    required DateTime since,
+    List<String> conversationIds = const [],
+    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+  }) {
+    return _client.syncChat(
+      since: since,
+      conversationIds: conversationIds,
       options: options,
     );
   }
