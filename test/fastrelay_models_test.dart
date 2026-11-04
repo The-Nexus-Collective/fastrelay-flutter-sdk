@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('models', () {
     test('CursorPage parses generic data', () {
-      final page = CursorPage<FastRelayReaction>.fromJson({
+      final page = CursorPage<FastrelayReaction>.fromJson({
         'data': [
           {
             'id': 'r1',
@@ -16,7 +16,7 @@ void main() {
         ],
         'nextCursor': 'next_1',
         'hasMore': true,
-      }, FastRelayReaction.fromJson);
+      }, FastrelayReaction.fromJson);
 
       expect(page.data, hasLength(1));
       expect(page.data.first.id, 'r1');
@@ -25,7 +25,7 @@ void main() {
     });
 
     test('NotificationPage parses unseen and unread counters', () {
-      final page = NotificationPage<FastRelayActivity>.fromJson({
+      final page = NotificationPage<FastrelayActivity>.fromJson({
         'data': [
           {
             'id': 'act_1',
@@ -40,7 +40,7 @@ void main() {
         'hasMore': false,
         'unseenCount': 3,
         'unreadCount': 2,
-      }, FastRelayActivity.fromJson);
+      }, FastrelayActivity.fromJson);
 
       expect(page.unseenCount, 3);
       expect(page.unreadCount, 2);
@@ -50,7 +50,7 @@ void main() {
     });
 
     test('NotificationPage parses aggregated groups payload', () {
-      final page = NotificationPage<FastRelayActivity>.fromJson({
+      final page = NotificationPage<FastrelayActivity>.fromJson({
         'groups': [
           {
             'groupKey': 'post_2026-02-25',
@@ -95,7 +95,7 @@ void main() {
         ],
         'unseenCount': 5,
         'unreadCount': 3,
-      }, FastRelayActivity.fromJson);
+      }, FastrelayActivity.fromJson);
 
       expect(page.isAggregated, isTrue);
       expect(page.groups, hasLength(2));
@@ -112,11 +112,11 @@ void main() {
     });
 
     test('NotificationPage handles empty groups list', () {
-      final page = NotificationPage<FastRelayActivity>.fromJson({
+      final page = NotificationPage<FastrelayActivity>.fromJson({
         'groups': const [],
         'unseenCount': 0,
         'unreadCount': 0,
-      }, FastRelayActivity.fromJson);
+      }, FastrelayActivity.fromJson);
 
       expect(page.isAggregated, isFalse);
       expect(page.groups, isEmpty);
@@ -124,13 +124,13 @@ void main() {
     });
 
     test('NotificationPage handles group with empty activities', () {
-      final page = NotificationPage<FastRelayActivity>.fromJson({
+      final page = NotificationPage<FastrelayActivity>.fromJson({
         'groups': [
           {'groupKey': 'empty', 'activityCount': 0, 'activities': []},
         ],
         'unseenCount': 0,
         'unreadCount': 0,
-      }, FastRelayActivity.fromJson);
+      }, FastrelayActivity.fromJson);
 
       expect(page.groups, hasLength(1));
       expect(page.groups.first.activities, isEmpty);
@@ -139,16 +139,16 @@ void main() {
 
     test('NotificationPage throws when both data and groups are missing', () {
       expect(
-        () => NotificationPage<FastRelayActivity>.fromJson({
+        () => NotificationPage<FastrelayActivity>.fromJson({
           'unseenCount': 1,
           'unreadCount': 1,
-        }, FastRelayActivity.fromJson),
+        }, FastrelayActivity.fromJson),
         throwsStateError,
       );
     });
 
-    test('FastRelayActivity parses required and optional fields', () {
-      final activity = FastRelayActivity.fromJson({
+    test('FastrelayActivity parses required and optional fields', () {
+      final activity = FastrelayActivity.fromJson({
         'id': 'act_1',
         'type': 'post',
         'text': 'Hello world',
@@ -173,8 +173,8 @@ void main() {
       expect(activity.ownReactions, isNull);
     });
 
-    test('FastRelayActivity parses embedded ownReactions', () {
-      final activity = FastRelayActivity.fromJson({
+    test('FastrelayActivity parses embedded ownReactions', () {
+      final activity = FastrelayActivity.fromJson({
         'id': 'act_1',
         'type': 'post',
         'userId': 'john',
@@ -205,7 +205,7 @@ void main() {
         'updatedAt': '2026-02-25T10:00:00Z',
       };
 
-      final activity = FastRelayActivity.fromJson({
+      final activity = FastrelayActivity.fromJson({
         'id': 'act_1',
         'type': 'post',
         'userId': 'john',
@@ -213,7 +213,7 @@ void main() {
         'createdAt': '2026-02-25T10:00:00Z',
         'updatedAt': '2026-02-25T10:00:00Z',
       });
-      final comment = FastRelayComment.fromJson({
+      final comment = FastrelayComment.fromJson({
         'id': 'cmt_1',
         'activityId': 'act_1',
         'userId': 'john',
@@ -222,7 +222,7 @@ void main() {
         'createdAt': '2026-02-25T10:00:00Z',
         'updatedAt': '2026-02-25T10:00:00Z',
       });
-      final reaction = FastRelayReaction.fromJson({
+      final reaction = FastrelayReaction.fromJson({
         'id': 'rxn_1',
         'activityId': 'act_1',
         'userId': 'john',
@@ -242,7 +242,7 @@ void main() {
     });
 
     test('comment parses custom payload with attachments', () {
-      final comment = FastRelayComment.fromJson({
+      final comment = FastrelayComment.fromJson({
         'id': 'cmt_1',
         'activityId': 'act_1',
         'userId': 'john',
@@ -266,7 +266,7 @@ void main() {
     });
 
     test('comment custom is null when absent', () {
-      final comment = FastRelayComment.fromJson({
+      final comment = FastrelayComment.fromJson({
         'id': 'cmt_1',
         'activityId': 'act_1',
         'userId': 'john',
@@ -279,14 +279,14 @@ void main() {
     });
 
     test('user is null when payload not enriched', () {
-      final activity = FastRelayActivity.fromJson({
+      final activity = FastrelayActivity.fromJson({
         'id': 'act_1',
         'type': 'post',
         'userId': 'john',
         'createdAt': '2026-02-25T10:00:00Z',
         'updatedAt': '2026-02-25T10:00:00Z',
       });
-      final reaction = FastRelayReaction.fromJson({
+      final reaction = FastrelayReaction.fromJson({
         'id': 'rxn_1',
         'activityId': 'act_1',
         'userId': 'john',
@@ -298,8 +298,8 @@ void main() {
       expect(reaction.user, isNull);
     });
 
-    test('FastRelayPoll parses user vote payload', () {
-      final poll = FastRelayPoll.fromJson({
+    test('FastrelayPoll parses user vote payload', () {
+      final poll = FastrelayPoll.fromJson({
         'id': 'poll_1',
         'question': 'Best language?',
         'options': [
@@ -316,14 +316,14 @@ void main() {
       expect(poll.hasVoted, isTrue);
     });
 
-    test('FastRelayUser initials prefer displayName, then id', () {
-      final withName = FastRelayUser.fromJson({
+    test('FastrelayUser initials prefer displayName, then id', () {
+      final withName = FastrelayUser.fromJson({
         'id': 'john_doe',
         'displayName': 'John Doe',
         'createdAt': '2026-02-25T10:00:00Z',
         'updatedAt': '2026-02-25T10:00:00Z',
       });
-      final withoutName = FastRelayUser.fromJson({
+      final withoutName = FastrelayUser.fromJson({
         'id': 'alice',
         'createdAt': '2026-02-25T10:00:00Z',
         'updatedAt': '2026-02-25T10:00:00Z',

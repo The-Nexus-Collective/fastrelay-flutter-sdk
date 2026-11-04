@@ -1,13 +1,13 @@
-class FastRelayRateLimit {
-  const FastRelayRateLimit({this.limit, this.remaining, this.reset});
+class FastrelayRateLimit {
+  const FastrelayRateLimit({this.limit, this.remaining, this.reset});
 
   final int? limit;
   final int? remaining;
   final int? reset;
 }
 
-class FastRelayApiError implements Exception {
-  const FastRelayApiError({
+class FastrelayApiError implements Exception {
+  const FastrelayApiError({
     required this.message,
     required this.status,
     this.code,
@@ -29,10 +29,10 @@ class FastRelayApiError implements Exception {
   final String? requestId;
   final String? path;
   final String? method;
-  final FastRelayRateLimit? rateLimit;
+  final FastrelayRateLimit? rateLimit;
 
   @override
   String toString() {
-    return 'FastRelayApiError(status: $status, code: $code, message: $message)';
+    return 'FastrelayApiError(status: $status, code: $code, message: $message)';
   }
 }

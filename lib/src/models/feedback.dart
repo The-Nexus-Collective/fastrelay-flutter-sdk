@@ -1,5 +1,5 @@
-class FastRelayFeedback {
-  const FastRelayFeedback({
+class FastrelayFeedback {
+  const FastrelayFeedback({
     required this.id,
     required this.activityId,
     required this.userId,
@@ -16,8 +16,8 @@ class FastRelayFeedback {
   bool get isShowMore => type == 'show_more';
   bool get isShowLess => type == 'show_less';
 
-  factory FastRelayFeedback.fromJson(Map<String, dynamic> json) {
-    return FastRelayFeedback(
+  factory FastrelayFeedback.fromJson(Map<String, dynamic> json) {
+    return FastrelayFeedback(
       id: json['id']?.toString() ?? '',
       activityId: json['activityId']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',

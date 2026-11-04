@@ -1,5 +1,5 @@
-class FastRelayUserMute {
-  const FastRelayUserMute({
+class FastrelayUserMute {
+  const FastrelayUserMute({
     required this.id,
     this.muterId,
     required this.mutedUserId,
@@ -17,10 +17,10 @@ class FastRelayUserMute {
   final DateTime? expiresAt;
   final DateTime createdAt;
 
-  factory FastRelayUserMute.fromJson(Map<String, dynamic> json) {
+  factory FastrelayUserMute.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now().toUtc();
 
-    return FastRelayUserMute(
+    return FastrelayUserMute(
       id: json['id']?.toString() ?? '',
       muterId: json['muterId']?.toString(),
       mutedUserId: json['mutedUserId']?.toString() ?? '',

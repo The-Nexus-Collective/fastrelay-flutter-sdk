@@ -1,6 +1,12 @@
-## Unreleased
+## 1.0.0
 
-* Add `FastRelayRealtime.connectionEstablished`, a stream of `FastRelayConnectionEstablished` (`connectionId`, `serverTime`, `isReconnect`) emitted on every server `connection.established`. Apps reload what they display when `isReconnect` is true.
+* **Breaking:** every public type is renamed from `FastRelay*` to `Fastrelay*` (e.g. `FastrelayClient`, `FastrelayRealtime`, `FastrelayApiError`, `FastrelayRequestOptions`) so the SDK spells fastrelay like the JS and Kotlin SDKs. Replace `FastRelay` with `Fastrelay` in imports and code.
+* Add chat. New REST methods on `FastrelayClient` (also grouped under `conversations`, `messages` and `chat`): `createConversation`, `queryConversations` (with `FastrelayConversationFilter`), `getConversation`, `updateConversation`, `deleteConversation`, `truncateConversation`, `listConversationMembers`, `addConversationMembers`, `updateConversationMember`, `removeConversationMember`, `sendMessage` (honours `FastrelayRequestOptions.idempotencyKey`), `listMessages` (`cursor` / `direction` / `around`), `updateMessage`, `deleteMessage`, `markConversationRead`, `getUnreadTotals` and `syncChat`. New models: `FastrelayConversation`, `FastrelayConversationMember`, `FastrelayMessage`, `FastrelayReplyPreview`, `FastrelayUnreadTotals`, `FastrelayChatSync`.
+* Realtime no longer drops server messages without a `feedId`. Those are chat events and are delivered on the new `FastrelayRealtime.chatEvents` stream as `FastrelayChatEvent` (raw `data` plus typed accessors such as `message`, `conversation`, `member`, `userId`, `userIds`, `online`, receipt cursors and `totals`), deduplicated by `eventId`. Chat events never reach `events` or feed streams; unknown chat event types are still delivered.
+* Use `connectionEstablished`'s `serverTime` as the `syncChat` anchor: keep it on the first connect and pass it as `since` after a reconnect.
+* Realtime adds client messages `startTyping`, `stopTyping`, `markDelivered` and `markRead` (fire-and-forget; return `false` without queueing when not connected) and `startPresence`, which is re-sent after every reconnect.
+* Blocking uses the existing mute API with `type: 'block'`; chat messages are flagged with `createFlag('message', messageId, ...)`.
+* Add `FastrelayRealtime.connectionEstablished`, a stream of `FastrelayConnectionEstablished` (`connectionId`, `serverTime`, `isReconnect`) emitted on every server `connection.established`. Apps reload what they display when `isReconnect` is true.
 * Remove the post-reconnect feed refetch. It requested the latest 25 activities of every subscribed feed and discarded the result, so it never delivered missed events; the `RECONNECT_CATCHUP_FAILED` realtime error is no longer emitted.
 * README: fix stale examples (`.data` instead of `.items`, `event.data`, `activity.created`, video status `event.type`, `unseenCount` / `unreadCount`, `groupKey`) and describe when `tokenProvider` is called.
 

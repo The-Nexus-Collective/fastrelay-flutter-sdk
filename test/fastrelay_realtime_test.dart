@@ -34,7 +34,7 @@ http.StreamedResponse jsonResponse(
 class FakeSocketFactory {
   final sockets = <FakeSocket>[];
 
-  FastRelayRealtimeSocket call(Uri uri) {
+  FastrelayRealtimeSocket call(Uri uri) {
     final socket = FakeSocket(uri);
     sockets.add(socket);
     return socket;
@@ -47,7 +47,7 @@ class FakeSocketFactory {
   }
 }
 
-class FakeSocket implements FastRelayRealtimeSocket {
+class FakeSocket implements FastrelayRealtimeSocket {
   FakeSocket(this.uri);
 
   final Uri uri;
@@ -55,19 +55,19 @@ class FakeSocket implements FastRelayRealtimeSocket {
 
   final _messagesController = StreamController<String>.broadcast();
   final _connectionController =
-      StreamController<FastRelayRealtimeSocketState>.broadcast();
+      StreamController<FastrelayRealtimeSocketState>.broadcast();
 
   bool isClosed = false;
 
   @override
-  Stream<FastRelayRealtimeSocketState> get connection =>
+  Stream<FastrelayRealtimeSocketState> get connection =>
       _connectionController.stream;
 
   @override
   Stream<String> get messages => _messagesController.stream;
 
   void emitConnection(
-    FastRelayRealtimeSocketStatus status, {
+    FastrelayRealtimeSocketStatus status, {
     int? closeCode,
     String? reason,
     Object? error,
@@ -76,7 +76,7 @@ class FakeSocket implements FastRelayRealtimeSocket {
       return;
     }
     _connectionController.add(
-      FastRelayRealtimeSocketState(
+      FastrelayRealtimeSocketState(
         status: status,
         closeCode: closeCode,
         reason: reason,
@@ -114,13 +114,13 @@ class FakeSocket implements FastRelayRealtimeSocket {
   }
 }
 
-FastRelayRealtime _buildRealtime(
-  FastRelayClient client,
+FastrelayRealtime _buildRealtime(
+  FastrelayClient client,
   FakeSocketFactory socketFactory, {
-  FastRelayTokenProvider? tokenProvider,
+  FastrelayTokenProvider? tokenProvider,
   bool maintainBackgroundConnection = false,
 }) {
-  return FastRelayRealtime(
+  return FastrelayRealtime(
     client: client,
     token: client.token ?? '',
     tokenProvider: tokenProvider,
@@ -147,11 +147,11 @@ String _jwtExpiringAt(DateTime expiresAt) {
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  group('FastRelayRealtime', () {
+  group('FastrelayRealtime', () {
     test('connectUser enables realtime and derives websocket URL', () async {
       final fakeSocketFactory = FakeSocketFactory();
 
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
@@ -161,9 +161,9 @@ void main() {
               required token,
               tokenProvider,
               maintainBackgroundConnection = false,
-              FastRelayRealtimeSocketFactory? socketFactory,
+              FastrelayRealtimeSocketFactory? socketFactory,
             }) {
-              return FastRelayRealtime(
+              return FastrelayRealtime(
                 client: client,
                 token: token,
                 tokenProvider: tokenProvider,
@@ -193,7 +193,7 @@ void main() {
       'feed.events auto-subscribes, routes events, and auto-unsubscribes',
       () async {
         final socketFactory = FakeSocketFactory();
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
           baseUrl: 'https://api.fastrelay.io',
@@ -204,9 +204,9 @@ void main() {
         await client.realtime!.connect();
 
         final socket = socketFactory.sockets.single;
-        socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+        socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
 
-        final events = <FastRelayRealtimeEvent>[];
+        final events = <FastrelayRealtimeEvent>[];
         final subscription = client
             .feed('timeline', 'john')
             .events()
@@ -256,7 +256,7 @@ void main() {
       'rapid feed.events subscriptions are batched into one subscribe',
       () async {
         final socketFactory = FakeSocketFactory();
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
           baseUrl: 'https://api.fastrelay.io',
@@ -267,7 +267,7 @@ void main() {
         await client.realtime!.connect();
 
         final socket = socketFactory.sockets.single;
-        socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+        socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
 
         final sub1 = client.feed('timeline', 'john').events().listen((_) {});
         final sub2 = client
@@ -297,7 +297,7 @@ void main() {
 
     test('deduplicates events by eventId', () async {
       final socketFactory = FakeSocketFactory();
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -308,9 +308,9 @@ void main() {
       await client.realtime!.connect();
 
       final socket = socketFactory.sockets.single;
-      socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+      socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
 
-      final received = <FastRelayRealtimeEvent>[];
+      final received = <FastrelayRealtimeEvent>[];
       final subscription = client
           .feed('timeline', 'john')
           .events()
@@ -341,7 +341,7 @@ void main() {
 
     test('reconnects and re-subscribes desired feeds', () async {
       final socketFactory = FakeSocketFactory();
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -352,7 +352,7 @@ void main() {
       await client.realtime!.connect();
 
       final socket1 = socketFactory.sockets.single;
-      socket1.emitConnection(FastRelayRealtimeSocketStatus.connected);
+      socket1.emitConnection(FastrelayRealtimeSocketStatus.connected);
 
       final subscription = client
           .feed('timeline', 'john')
@@ -366,7 +366,7 @@ void main() {
         'feeds': ['timeline:john'],
       });
       socket1.emitConnection(
-        FastRelayRealtimeSocketStatus.disconnected,
+        FastrelayRealtimeSocketStatus.disconnected,
         closeCode: 1006,
       );
 
@@ -375,7 +375,7 @@ void main() {
       expect(socketFactory.sockets.length, 2);
 
       final socket2 = socketFactory.sockets.last;
-      socket2.emitConnection(FastRelayRealtimeSocketStatus.connected);
+      socket2.emitConnection(FastrelayRealtimeSocketStatus.connected);
 
       await _flush();
 
@@ -395,7 +395,7 @@ void main() {
       () async {
         final socketFactory = FakeSocketFactory();
         final requests = <http.BaseRequest>[];
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
           baseUrl: 'https://api.fastrelay.io',
@@ -406,7 +406,7 @@ void main() {
         );
 
         client.realtime = _buildRealtime(client, socketFactory);
-        final established = <FastRelayConnectionEstablished>[];
+        final established = <FastrelayConnectionEstablished>[];
         final establishedSubscription = client.realtime!.connectionEstablished
             .listen(established.add);
         final feedSubscription = client
@@ -416,7 +416,7 @@ void main() {
         await client.realtime!.connect();
 
         final socket1 = socketFactory.sockets.single;
-        socket1.emitConnection(FastRelayRealtimeSocketStatus.connected);
+        socket1.emitConnection(FastrelayRealtimeSocketStatus.connected);
         socket1.emitJson({
           'type': 'connection.established',
           'connectionId': 'conn_1',
@@ -424,13 +424,13 @@ void main() {
         });
         await _flush();
         socket1.emitConnection(
-          FastRelayRealtimeSocketStatus.disconnected,
+          FastrelayRealtimeSocketStatus.disconnected,
           closeCode: 1006,
         );
         await _flush(const Duration(milliseconds: 80));
 
         final socket2 = socketFactory.sockets.last;
-        socket2.emitConnection(FastRelayRealtimeSocketStatus.connected);
+        socket2.emitConnection(FastrelayRealtimeSocketStatus.connected);
         socket2.emitJson({
           'type': 'connection.established',
           'connectionId': 'conn_2',
@@ -455,7 +455,7 @@ void main() {
       '4003 triggers tokenProvider refresh and reconnect with new token',
       () async {
         final socketFactory = FakeSocketFactory();
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: 'expired.jwt.token',
           baseUrl: 'https://api.fastrelay.io',
@@ -470,10 +470,10 @@ void main() {
         await client.realtime!.connect();
 
         final socket1 = socketFactory.sockets.single;
-        socket1.emitConnection(FastRelayRealtimeSocketStatus.connected);
+        socket1.emitConnection(FastrelayRealtimeSocketStatus.connected);
 
         socket1.emitConnection(
-          FastRelayRealtimeSocketStatus.disconnected,
+          FastrelayRealtimeSocketStatus.disconnected,
           closeCode: 4003,
         );
 
@@ -496,7 +496,7 @@ void main() {
       '4002 with tokenProvider refreshes once and reconnects with new token',
       () async {
         final socketFactory = FakeSocketFactory();
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: 'expired.jwt.token',
           baseUrl: 'https://api.fastrelay.io',
@@ -511,7 +511,7 @@ void main() {
         await client.realtime!.connect();
 
         socketFactory.sockets.single.emitConnection(
-          FastRelayRealtimeSocketStatus.disconnected,
+          FastrelayRealtimeSocketStatus.disconnected,
           closeCode: 4002,
         );
 
@@ -532,7 +532,7 @@ void main() {
 
     test('second consecutive 4002 is fatal INVALID_TOKEN', () async {
       final socketFactory = FakeSocketFactory();
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'expired.jwt.token',
         baseUrl: 'https://api.fastrelay.io',
@@ -546,17 +546,17 @@ void main() {
       );
       await client.realtime!.connect();
 
-      final errors = <FastRelayRealtimeError>[];
+      final errors = <FastrelayRealtimeError>[];
       final errorSub = client.realtime!.errors.listen(errors.add);
 
       socketFactory.sockets.single.emitConnection(
-        FastRelayRealtimeSocketStatus.disconnected,
+        FastrelayRealtimeSocketStatus.disconnected,
         closeCode: 4002,
       );
       await _flush(const Duration(milliseconds: 80));
 
       socketFactory.sockets.last.emitConnection(
-        FastRelayRealtimeSocketStatus.disconnected,
+        FastrelayRealtimeSocketStatus.disconnected,
         closeCode: 4002,
       );
       await _flush(const Duration(milliseconds: 80));
@@ -578,14 +578,14 @@ void main() {
         final initialToken = _jwtExpiringAt(
           now.add(const Duration(minutes: 10)),
         );
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: initialToken,
           baseUrl: 'https://api.fastrelay.io',
           httpClient: CaptureClient((_) async => jsonResponse({'ok': true})),
         );
 
-        client.realtime = FastRelayRealtime(
+        client.realtime = FastrelayRealtime(
           client: client,
           token: initialToken,
           tokenProvider: () async => 'fresh.jwt.token',
@@ -600,11 +600,11 @@ void main() {
 
         final socket1 = socketFactory.sockets.single;
         expect(socket1.uri.queryParameters['token'], initialToken);
-        socket1.emitConnection(FastRelayRealtimeSocketStatus.connected);
+        socket1.emitConnection(FastrelayRealtimeSocketStatus.connected);
 
         now = now.add(const Duration(hours: 1));
         socket1.emitConnection(
-          FastRelayRealtimeSocketStatus.disconnected,
+          FastrelayRealtimeSocketStatus.disconnected,
           closeCode: 1006,
         );
 
@@ -627,7 +627,7 @@ void main() {
       'non-retryable disconnect surfaces errors and does not reconnect',
       () async {
         final socketFactory = FakeSocketFactory();
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
           baseUrl: 'https://api.fastrelay.io',
@@ -637,13 +637,13 @@ void main() {
         client.realtime = _buildRealtime(client, socketFactory);
         await client.realtime!.connect();
 
-        final errors = <FastRelayRealtimeError>[];
+        final errors = <FastrelayRealtimeError>[];
         final errorSub = client.realtime!.errors.listen(errors.add);
 
         final socket = socketFactory.sockets.single;
-        socket.emitConnection(FastRelayRealtimeSocketStatus.connected);
+        socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
         socket.emitConnection(
-          FastRelayRealtimeSocketStatus.disconnected,
+          FastrelayRealtimeSocketStatus.disconnected,
           closeCode: 4029,
         );
 
@@ -662,7 +662,7 @@ void main() {
 
     test('lifecycle pause closes connection and resume reconnects', () async {
       final socketFactory = FakeSocketFactory();
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -673,7 +673,7 @@ void main() {
       await client.realtime!.connect();
 
       final socket1 = socketFactory.sockets.single;
-      socket1.emitConnection(FastRelayRealtimeSocketStatus.connected);
+      socket1.emitConnection(FastrelayRealtimeSocketStatus.connected);
 
       client.realtime!.didChangeAppLifecycleState(AppLifecycleState.paused);
       expect(socket1.isClosed, isTrue);
@@ -686,6 +686,309 @@ void main() {
       await client.realtime!.dispose();
       client.close();
       await socketFactory.dispose();
+    });
+  });
+
+  group('FastrelayRealtime chat', () {
+    late FakeSocketFactory socketFactory;
+    late FastrelayClient client;
+    late FastrelayRealtime realtime;
+
+    setUp(() async {
+      socketFactory = FakeSocketFactory();
+      client = FastrelayClient(
+        apiKey: 'key_123',
+        token: 'jwt_123',
+        baseUrl: 'https://api.fastrelay.io',
+        httpClient: CaptureClient((_) async => jsonResponse({'data': []})),
+      );
+      realtime = _buildRealtime(client, socketFactory);
+      client.realtime = realtime;
+      await realtime.connect();
+    });
+
+    tearDown(() async {
+      await realtime.dispose();
+      client.close();
+      await socketFactory.dispose();
+    });
+
+    Map<String, dynamic> messageNew({String eventId = 'evt_msg_1'}) => {
+      'type': 'message.new',
+      'conversationId': 'conv_1',
+      'eventId': eventId,
+      'createdAt': '2026-11-02T10:00:00Z',
+      'data': {
+        'message': {
+          'id': 'msg_1',
+          'conversationId': 'conv_1',
+          'seq': 7,
+          'type': 'regular',
+          'silent': false,
+          'userId': 'jane',
+          'text': 'hi',
+          'custom': {},
+          'createdAt': '2026-11-02T10:00:00Z',
+          'updatedAt': '2026-11-02T10:00:00Z',
+        },
+      },
+    };
+
+    test(
+      'chat event without feedId reaches chatEvents, not feed listeners',
+      () async {
+        final socket = socketFactory.sockets.single;
+        socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
+
+        final chat = <FastrelayChatEvent>[];
+        final feedEvents = <FastrelayRealtimeEvent>[];
+        final feedStreamEvents = <FastrelayRealtimeEvent>[];
+        final chatSub = realtime.chatEvents.listen(chat.add);
+        final eventsSub = realtime.events.listen(feedEvents.add);
+        final feedSub = realtime
+            .eventsForFeed('timeline:john')
+            .listen(feedStreamEvents.add);
+        await _flush();
+
+        socket.emitJson(messageNew());
+        socket.emitJson({
+          'type': 'activity.created',
+          'feedId': 'timeline:john',
+          'eventId': 'evt_feed_1',
+          'createdAt': '2026-11-02T10:00:00Z',
+          'data': {'id': 'act_1'},
+        });
+        await _flush();
+
+        expect(chat, hasLength(1));
+        final event = chat.single;
+        expect(event.type, FastrelayChatEventType.messageNew);
+        expect(event.conversationId, 'conv_1');
+        expect(event.eventId, 'evt_msg_1');
+        expect(event.createdAt, DateTime.utc(2026, 11, 2, 10));
+        expect(event.message?.id, 'msg_1');
+        expect(event.message?.seq, 7);
+        expect(event.message?.text, 'hi');
+
+        expect(feedEvents.map((e) => e.eventId), ['evt_feed_1']);
+        expect(feedStreamEvents.map((e) => e.eventId), ['evt_feed_1']);
+
+        await chatSub.cancel();
+        await eventsSub.cancel();
+        await feedSub.cancel();
+      },
+    );
+
+    test('duplicate chat eventId is dropped', () async {
+      final socket = socketFactory.sockets.single;
+      socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
+
+      final chat = <FastrelayChatEvent>[];
+      final sub = realtime.chatEvents.listen(chat.add);
+
+      socket.emitJson(messageNew(eventId: 'evt_dup'));
+      socket.emitJson(messageNew(eventId: 'evt_dup'));
+      await _flush();
+
+      expect(chat, hasLength(1));
+      await sub.cancel();
+    });
+
+    test(
+      'presence.changed without conversationId and unknown types are delivered',
+      () async {
+        final socket = socketFactory.sockets.single;
+        socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
+
+        final chat = <FastrelayChatEvent>[];
+        final sub = realtime.chatEvents.listen(chat.add);
+
+        socket.emitJson({
+          'type': 'presence.changed',
+          'eventId': 'evt_p1',
+          'createdAt': '2026-11-02T10:00:00Z',
+          'data': {
+            'userId': 'jane',
+            'online': false,
+            'lastActiveAt': '2026-11-02T09:59:00Z',
+          },
+        });
+        socket.emitJson({
+          'type': 'reaction.future',
+          'conversationId': 'conv_1',
+          'eventId': 'evt_u1',
+          'createdAt': '2026-11-02T10:00:00Z',
+          'data': {'emoji': 'wave', 'count': 2},
+        });
+        await _flush();
+
+        expect(chat, hasLength(2));
+        final presence = chat.first;
+        expect(presence.type, FastrelayChatEventType.presenceChanged);
+        expect(presence.conversationId, isNull);
+        expect(presence.userId, 'jane');
+        expect(presence.online, isFalse);
+        expect(presence.lastActiveAt, DateTime.utc(2026, 11, 2, 9, 59));
+
+        final unknown = chat.last;
+        expect(unknown.type, 'reaction.future');
+        expect(unknown.data, {'emoji': 'wave', 'count': 2});
+        expect(unknown.message, isNull);
+
+        await sub.cancel();
+      },
+    );
+
+    test('malformed typed payload does not break the socket loop', () async {
+      final socket = socketFactory.sockets.single;
+      socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
+
+      final chat = <FastrelayChatEvent>[];
+      final sub = realtime.chatEvents.listen(chat.add);
+
+      socket.emitJson({
+        'type': 'message.new',
+        'conversationId': 'conv_1',
+        'eventId': 'evt_bad',
+        'createdAt': '2026-11-02T10:00:00Z',
+        'data': {'message': 'not-an-object'},
+      });
+      socket.emitJson(messageNew(eventId: 'evt_after'));
+      await _flush();
+
+      expect(chat.map((e) => e.eventId), ['evt_bad', 'evt_after']);
+      expect(chat.first.message, isNull);
+      expect(chat.last.message?.id, 'msg_1');
+
+      await sub.cancel();
+    });
+
+    test('client chat messages serialize exactly', () async {
+      final socket = socketFactory.sockets.single;
+      socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
+      await _flush();
+      socket.sentMessages.clear();
+
+      expect(realtime.startTyping('conv_1'), isTrue);
+      expect(realtime.stopTyping('conv_1'), isTrue);
+      expect(realtime.markDelivered('conv_1', 5), isTrue);
+      expect(realtime.markRead('conv_1', seq: 6), isTrue);
+      expect(realtime.markRead('conv_1'), isTrue);
+      realtime.startPresence();
+
+      expect(socket.sentMessages, [
+        '{"type":"typing.start","conversationId":"conv_1"}',
+        '{"type":"typing.stop","conversationId":"conv_1"}',
+        '{"type":"message.delivered","conversationId":"conv_1","seq":5}',
+        '{"type":"conversation.read","conversationId":"conv_1","seq":6}',
+        '{"type":"conversation.read","conversationId":"conv_1"}',
+        '{"type":"presence.start"}',
+      ]);
+    });
+
+    test('client chat messages validate input', () async {
+      final socket = socketFactory.sockets.single;
+      socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
+      await _flush();
+      socket.sentMessages.clear();
+
+      expect(() => realtime.startTyping('  '), throwsArgumentError);
+      expect(() => realtime.markDelivered('conv_1', 0), throwsArgumentError);
+      expect(() => realtime.markRead('conv_1', seq: -1), throwsArgumentError);
+      expect(socket.sentMessages, isEmpty);
+    });
+
+    test('typing while disconnected returns false and sends nothing', () async {
+      final socket = socketFactory.sockets.single;
+
+      expect(
+        realtime.connectionState,
+        isNot(FastrelayConnectionState.connected),
+      );
+      expect(realtime.startTyping('conv_1'), isFalse);
+      expect(realtime.markDelivered('conv_1', 1), isFalse);
+      expect(realtime.markRead('conv_1'), isFalse);
+      expect(socket.sentMessages, isEmpty);
+
+      socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
+      await _flush();
+
+      // Nothing was queued while disconnected.
+      expect(
+        socket.sentJsonMessages.where(
+          (m) => (m['type'] as String).startsWith('typing'),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('startPresence sends now and again after a reconnect', () async {
+      final socket1 = socketFactory.sockets.single;
+      socket1.emitConnection(FastrelayRealtimeSocketStatus.connected);
+      await _flush();
+
+      realtime.startPresence();
+      expect(
+        socket1.sentJsonMessages.where((m) => m['type'] == 'presence.start'),
+        hasLength(1),
+      );
+
+      socket1.emitConnection(
+        FastrelayRealtimeSocketStatus.disconnected,
+        closeCode: 1006,
+      );
+      await _flush(const Duration(milliseconds: 80));
+      expect(socketFactory.sockets, hasLength(2));
+
+      final socket2 = socketFactory.sockets.last;
+      socket2.emitConnection(FastrelayRealtimeSocketStatus.connected);
+      await _flush();
+
+      expect(
+        socket2.sentJsonMessages.where((m) => m['type'] == 'presence.start'),
+        hasLength(1),
+      );
+    });
+
+    test('startPresence while disconnected is sent once connected', () async {
+      final socket = socketFactory.sockets.single;
+      realtime.startPresence();
+      expect(socket.sentMessages, isEmpty);
+
+      socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
+      await _flush();
+
+      expect(
+        socket.sentJsonMessages.where((m) => m['type'] == 'presence.start'),
+        hasLength(1),
+      );
+    });
+
+    test('server error for a chat message is routed to errors', () async {
+      final socket = socketFactory.sockets.single;
+      socket.emitConnection(FastrelayRealtimeSocketStatus.connected);
+
+      final errors = <FastrelayRealtimeError>[];
+      final chat = <FastrelayChatEvent>[];
+      final errorSub = realtime.errors.listen(errors.add);
+      final chatSub = realtime.chatEvents.listen(chat.add);
+
+      socket.emitJson({
+        'type': 'error',
+        'error': {
+          'code': 'FORBIDDEN',
+          'message': 'Not a member.',
+          'hint': 'Join the conversation first.',
+        },
+      });
+      await _flush();
+
+      expect(errors.single.code, 'FORBIDDEN');
+      expect(errors.single.hint, 'Join the conversation first.');
+      expect(chat, isEmpty);
+
+      await errorSub.cancel();
+      await chatSub.cancel();
     });
   });
 }

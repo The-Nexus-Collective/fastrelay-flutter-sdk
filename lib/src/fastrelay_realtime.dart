@@ -9,60 +9,61 @@ import 'package:web_socket_client/web_socket_client.dart' as ws;
 
 import 'fastrelay_client.dart';
 import 'models/connection_established.dart';
+import 'models/chat_event.dart';
 import 'models/realtime_event.dart';
 import 'models/video.dart';
 import 'utils.dart';
 
-typedef FastRelayTokenProvider = Future<String> Function();
+typedef FastrelayTokenProvider = Future<String> Function();
 
-typedef FastRelayRealtimeFactory =
-    FastRelayRealtime Function({
-      required FastRelayClient client,
+typedef FastrelayRealtimeFactory =
+    FastrelayRealtime Function({
+      required FastrelayClient client,
       required String token,
-      FastRelayTokenProvider? tokenProvider,
+      FastrelayTokenProvider? tokenProvider,
       bool maintainBackgroundConnection,
-      FastRelayRealtimeSocketFactory? socketFactory,
+      FastrelayRealtimeSocketFactory? socketFactory,
     });
 
-typedef FastRelayRealtimeSocketFactory =
-    FastRelayRealtimeSocket Function(Uri uri);
+typedef FastrelayRealtimeSocketFactory =
+    FastrelayRealtimeSocket Function(Uri uri);
 
-abstract class FastRelayRealtimeSocket {
+abstract class FastrelayRealtimeSocket {
   Stream<String> get messages;
-  Stream<FastRelayRealtimeSocketState> get connection;
+  Stream<FastrelayRealtimeSocketState> get connection;
 
   void send(String message);
   void close();
 }
 
-enum FastRelayRealtimeSocketStatus {
+enum FastrelayRealtimeSocketStatus {
   connecting,
   connected,
   reconnecting,
   disconnected,
 }
 
-class FastRelayRealtimeSocketState {
-  const FastRelayRealtimeSocketState({
+class FastrelayRealtimeSocketState {
+  const FastrelayRealtimeSocketState({
     required this.status,
     this.closeCode,
     this.reason,
     this.error,
   });
 
-  final FastRelayRealtimeSocketStatus status;
+  final FastrelayRealtimeSocketStatus status;
   final int? closeCode;
   final String? reason;
   final Object? error;
 }
 
-class FastRelayRealtime with WidgetsBindingObserver {
-  FastRelayRealtime({
-    required FastRelayClient client,
+class FastrelayRealtime with WidgetsBindingObserver {
+  FastrelayRealtime({
+    required FastrelayClient client,
     required String token,
-    FastRelayTokenProvider? tokenProvider,
+    FastrelayTokenProvider? tokenProvider,
     bool maintainBackgroundConnection = false,
-    FastRelayRealtimeSocketFactory? socketFactory,
+    FastrelayRealtimeSocketFactory? socketFactory,
     Duration subscribeDebounce = const Duration(milliseconds: 50),
     Duration deadConnectionTimeout = const Duration(seconds: 90),
     Duration reconnectInitialDelay = const Duration(seconds: 1),
@@ -84,10 +85,10 @@ class FastRelayRealtime with WidgetsBindingObserver {
 
   static const int _maxRecentEventIds = 1000;
 
-  final FastRelayClient _client;
-  final FastRelayTokenProvider? _tokenProvider;
+  final FastrelayClient _client;
+  final FastrelayTokenProvider? _tokenProvider;
   final bool _maintainBackgroundConnection;
-  final FastRelayRealtimeSocketFactory _socketFactory;
+  final FastrelayRealtimeSocketFactory _socketFactory;
   final Duration _subscribeDebounce;
   final Duration _deadConnectionTimeout;
   final Duration _reconnectInitialDelay;
@@ -102,21 +103,23 @@ class FastRelayRealtime with WidgetsBindingObserver {
   final LinkedHashSet<String> _recentEventIds = LinkedHashSet<String>();
   final Map<String, _FeedStreamEntry> _feedStreams = {};
 
-  final StreamController<FastRelayRealtimeEvent> _eventController =
-      StreamController<FastRelayRealtimeEvent>.broadcast();
-  final StreamController<FastRelayConnectionState> _stateController =
-      StreamController<FastRelayConnectionState>.broadcast();
-  final StreamController<FastRelayRealtimeError> _errorController =
-      StreamController<FastRelayRealtimeError>.broadcast();
-  final StreamController<FastRelayVideoStatusEvent> _videoStatusController =
-      StreamController<FastRelayVideoStatusEvent>.broadcast();
-  final StreamController<FastRelayConnectionEstablished>
+  final StreamController<FastrelayRealtimeEvent> _eventController =
+      StreamController<FastrelayRealtimeEvent>.broadcast();
+  final StreamController<FastrelayConnectionState> _stateController =
+      StreamController<FastrelayConnectionState>.broadcast();
+  final StreamController<FastrelayRealtimeError> _errorController =
+      StreamController<FastrelayRealtimeError>.broadcast();
+  final StreamController<FastrelayVideoStatusEvent> _videoStatusController =
+      StreamController<FastrelayVideoStatusEvent>.broadcast();
+  final StreamController<FastrelayChatEvent> _chatEventController =
+      StreamController<FastrelayChatEvent>.broadcast();
+  final StreamController<FastrelayConnectionEstablished>
   _establishedController =
-      StreamController<FastRelayConnectionEstablished>.broadcast();
+      StreamController<FastrelayConnectionEstablished>.broadcast();
 
-  FastRelayRealtimeSocket? _socket;
+  FastrelayRealtimeSocket? _socket;
   StreamSubscription<String>? _messageSubscription;
-  StreamSubscription<FastRelayRealtimeSocketState>? _connectionSubscription;
+  StreamSubscription<FastrelayRealtimeSocketState>? _connectionSubscription;
 
   Timer? _subscribeBatchTimer;
   Timer? _reconnectTimer;
@@ -125,8 +128,8 @@ class FastRelayRealtime with WidgetsBindingObserver {
   DateTime? _lastServerMessageAt;
   String _token;
 
-  FastRelayConnectionState _connectionState =
-      FastRelayConnectionState.disconnected;
+  FastrelayConnectionState _connectionState =
+      FastrelayConnectionState.disconnected;
 
   bool _shouldBeConnected = false;
   bool _isDisposed = false;
@@ -136,24 +139,33 @@ class FastRelayRealtime with WidgetsBindingObserver {
   bool _invalidTokenRefreshAttempted = false;
   bool _hasConnectedAtLeastOnce = false;
   bool _hasEstablishedAtLeastOnce = false;
+  bool _presenceRequested = false;
 
   int _generation = 0;
   int _reconnectAttempt = 0;
 
-  Stream<FastRelayRealtimeEvent> get events => _eventController.stream;
+  Stream<FastrelayRealtimeEvent> get events => _eventController.stream;
 
-  Stream<FastRelayConnectionState> get connectionStateStream =>
+  Stream<FastrelayConnectionState> get connectionStateStream =>
       _stateController.stream;
 
-  Stream<FastRelayRealtimeError> get errors => _errorController.stream;
+  Stream<FastrelayRealtimeError> get errors => _errorController.stream;
 
-  Stream<FastRelayVideoStatusEvent> get videoStatusEvents =>
+  Stream<FastrelayVideoStatusEvent> get videoStatusEvents =>
       _videoStatusController.stream;
 
-  Stream<FastRelayConnectionEstablished> get connectionEstablished =>
+  /// Chat events (`message.new`, `typing.start`, `presence.changed`, ...).
+  /// These carry no `feedId` and never appear on [events] or feed streams.
+  /// Events are deduplicated by `eventId`; unknown types are delivered too.
+  Stream<FastrelayChatEvent> get chatEvents => _chatEventController.stream;
+
+  /// Emits on every successful (re)connect. Its `serverTime` is the
+  /// `syncChat` anchor: keep it on the first connect, and on a reconnect call
+  /// `syncChat(since: anchor)` and store the response's `serverTime`.
+  Stream<FastrelayConnectionEstablished> get connectionEstablished =>
       _establishedController.stream;
 
-  FastRelayConnectionState get connectionState => _connectionState;
+  FastrelayConnectionState get connectionState => _connectionState;
 
   void updateToken(String token) {
     _token = token;
@@ -199,9 +211,10 @@ class FastRelayRealtime with WidgetsBindingObserver {
     if (clearSubscriptions) {
       _desiredFeeds.clear();
       _clearFeedStreams();
+      _presenceRequested = false;
     }
 
-    _setConnectionState(FastRelayConnectionState.disconnected);
+    _setConnectionState(FastrelayConnectionState.disconnected);
   }
 
   Future<void> dispose() async {
@@ -212,6 +225,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     _isDisposed = true;
     _shouldBeConnected = false;
     _lifecycleSuspended = false;
+    _presenceRequested = false;
 
     _cancelReconnectTimer();
     _cancelSubscribeBatch();
@@ -237,19 +251,84 @@ class FastRelayRealtime with WidgetsBindingObserver {
     await _stateController.close();
     await _errorController.close();
     await _videoStatusController.close();
+    await _chatEventController.close();
     await _establishedController.close();
   }
 
-  Stream<FastRelayRealtimeEvent> eventsForFeed(String feedId, {String? type}) {
+  /// Tells the other members that the user started typing. Fire-and-forget:
+  /// returns `false` without queueing when not connected.
+  bool startTyping(String conversationId) {
+    return _sendChatMessage('typing.start', conversationId);
+  }
+
+  /// Tells the other members that the user stopped typing. Fire-and-forget:
+  /// returns `false` without queueing when not connected.
+  bool stopTyping(String conversationId) {
+    return _sendChatMessage('typing.stop', conversationId);
+  }
+
+  /// Marks messages up to [seq] (must be > 0) delivered. Fire-and-forget:
+  /// returns `false` without queueing when not connected.
+  bool markDelivered(String conversationId, int seq) {
+    return _sendChatMessage('message.delivered', conversationId, seq: seq);
+  }
+
+  /// Marks the conversation read up to [seq] (must be > 0), or up to the
+  /// latest message when omitted. Fire-and-forget: returns `false` without
+  /// queueing when not connected — fall back to
+  /// `FastrelayClient.markConversationRead`.
+  bool markRead(String conversationId, {int? seq}) {
+    return _sendChatMessage('conversation.read', conversationId, seq: seq);
+  }
+
+  /// Opts this connection into presence tracking. Sent now when connected
+  /// and re-sent after every reconnect. There is no stop message: the user
+  /// goes offline when the connection closes. Cleared by [dispose] and by
+  /// `disconnect(clearSubscriptions: true)`.
+  void startPresence() {
     if (_isDisposed) {
-      return Stream<FastRelayRealtimeEvent>.error(
-        StateError('FastRelayRealtime is disposed.'),
+      return;
+    }
+    _presenceRequested = true;
+    if (_connectionState == FastrelayConnectionState.connected) {
+      _send({'type': 'presence.start'});
+    }
+  }
+
+  bool _sendChatMessage(String type, String conversationId, {int? seq}) {
+    final normalizedConversationId = conversationId.trim();
+    if (normalizedConversationId.isEmpty) {
+      throw ArgumentError.value(
+        conversationId,
+        'conversationId',
+        'must not be blank.',
+      );
+    }
+    if (seq != null && seq <= 0) {
+      throw ArgumentError.value(seq, 'seq', 'must be greater than 0.');
+    }
+
+    if (_isDisposed || _connectionState != FastrelayConnectionState.connected) {
+      return false;
+    }
+
+    return _send({
+      'type': type,
+      'conversationId': normalizedConversationId,
+      'seq': ?seq,
+    });
+  }
+
+  Stream<FastrelayRealtimeEvent> eventsForFeed(String feedId, {String? type}) {
+    if (_isDisposed) {
+      return Stream<FastrelayRealtimeEvent>.error(
+        StateError('FastrelayRealtime is disposed.'),
       );
     }
 
     final normalizedFeedId = feedId.trim();
     if (normalizedFeedId.isEmpty) {
-      return Stream<FastRelayRealtimeEvent>.error(
+      return Stream<FastrelayRealtimeEvent>.error(
         ArgumentError('feedId must not be empty.'),
       );
     }
@@ -289,7 +368,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
 
   _FeedStreamEntry _createFeedStreamEntry(String feedId) {
     return _FeedStreamEntry(
-      controller: StreamController<FastRelayRealtimeEvent>.broadcast(
+      controller: StreamController<FastrelayRealtimeEvent>.broadcast(
         onListen: () {
           if (_isDisposed) {
             return;
@@ -369,13 +448,13 @@ class FastRelayRealtime with WidgetsBindingObserver {
     final token = _token.trim();
     if (token.isEmpty) {
       _emitError(
-        FastRelayRealtimeError(
+        FastrelayRealtimeError(
           code: 'MISSING_TOKEN',
           message: 'Realtime connection requires a non-empty token.',
           retryable: false,
         ),
       );
-      _setConnectionState(FastRelayConnectionState.disconnected);
+      _setConnectionState(FastrelayConnectionState.disconnected);
       return;
     }
 
@@ -394,8 +473,8 @@ class FastRelayRealtime with WidgetsBindingObserver {
 
     _setConnectionState(
       isReconnect
-          ? FastRelayConnectionState.reconnecting
-          : FastRelayConnectionState.connecting,
+          ? FastrelayConnectionState.reconnecting
+          : FastrelayConnectionState.connecting,
     );
 
     final uri = _buildRealtimeUri(token);
@@ -412,7 +491,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
           return;
         }
         _emitError(
-          FastRelayRealtimeError(
+          FastrelayRealtimeError(
             code: 'SOCKET_MESSAGE_STREAM_ERROR',
             message: 'Realtime message stream failed.',
             retryable: true,
@@ -430,7 +509,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
           return;
         }
         _emitError(
-          FastRelayRealtimeError(
+          FastrelayRealtimeError(
             code: 'SOCKET_CONNECTION_STREAM_ERROR',
             message: 'Realtime connection stream failed.',
             retryable: true,
@@ -442,26 +521,26 @@ class FastRelayRealtime with WidgetsBindingObserver {
     );
   }
 
-  void _handleSocketState(FastRelayRealtimeSocketState state, int generation) {
+  void _handleSocketState(FastrelayRealtimeSocketState state, int generation) {
     if (_isDisposed || generation != _generation) {
       return;
     }
 
     switch (state.status) {
-      case FastRelayRealtimeSocketStatus.connecting:
+      case FastrelayRealtimeSocketStatus.connecting:
         if (_hasConnectedAtLeastOnce) {
-          _setConnectionState(FastRelayConnectionState.reconnecting);
+          _setConnectionState(FastrelayConnectionState.reconnecting);
         } else {
-          _setConnectionState(FastRelayConnectionState.connecting);
+          _setConnectionState(FastrelayConnectionState.connecting);
         }
         break;
-      case FastRelayRealtimeSocketStatus.connected:
+      case FastrelayRealtimeSocketStatus.connected:
         _onConnected(generation);
         break;
-      case FastRelayRealtimeSocketStatus.reconnecting:
-        _setConnectionState(FastRelayConnectionState.reconnecting);
+      case FastrelayRealtimeSocketStatus.reconnecting:
+        _setConnectionState(FastrelayConnectionState.reconnecting);
         break;
-      case FastRelayRealtimeSocketStatus.disconnected:
+      case FastrelayRealtimeSocketStatus.disconnected:
         _onDisconnected(
           generation,
           closeCode: state.closeCode,
@@ -480,11 +559,15 @@ class FastRelayRealtime with WidgetsBindingObserver {
     _reconnectAttempt = 0;
     _invalidTokenRefreshAttempted = false;
     _cancelReconnectTimer();
-    _setConnectionState(FastRelayConnectionState.connected);
+    _setConnectionState(FastrelayConnectionState.connected);
 
     _hasConnectedAtLeastOnce = true;
 
     _queueResubscribe();
+
+    if (_presenceRequested) {
+      _send({'type': 'presence.start'});
+    }
   }
 
   void _onDisconnected(
@@ -499,7 +582,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
 
     _stopDeadConnectionMonitor();
     _acknowledgedFeeds.clear();
-    _setConnectionState(FastRelayConnectionState.disconnected);
+    _setConnectionState(FastrelayConnectionState.disconnected);
 
     if (_lifecycleSuspended || !_shouldBeConnected) {
       return;
@@ -520,7 +603,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     if (closeCode == 4029 || closeCode == 4002) {
       _shouldBeConnected = false;
       _emitError(
-        FastRelayRealtimeError(
+        FastrelayRealtimeError(
           code: closeCode == 4029
               ? 'CONNECTION_LIMIT_EXCEEDED'
               : 'INVALID_TOKEN',
@@ -540,7 +623,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
       if (_tokenProvider == null) {
         _shouldBeConnected = false;
         _emitError(
-          FastRelayRealtimeError(
+          FastrelayRealtimeError(
             code: 'TOKEN_EXPIRED',
             message:
                 'Realtime token expired and no tokenProvider was configured.',
@@ -558,7 +641,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     }
 
     _emitError(
-      FastRelayRealtimeError(
+      FastrelayRealtimeError(
         code: 'CONNECTION_DROPPED',
         message: 'Realtime connection dropped.',
         retryable: true,
@@ -612,7 +695,18 @@ class FastRelayRealtime with WidgetsBindingObserver {
         return;
     }
 
-    final event = FastRelayRealtimeEvent.fromJson(normalized);
+    if (type.isEmpty || _isControlMessageType(type)) {
+      return;
+    }
+
+    // Feed events carry a `feedId`; chat events (`ChatEvent` on the server)
+    // never do.
+    if (normalized['feedId'] == null) {
+      _handleChatEvent(normalized);
+      return;
+    }
+
+    final event = FastrelayRealtimeEvent.fromJson(normalized);
     if (event.type.isEmpty || event.feedId.isEmpty) {
       return;
     }
@@ -624,12 +718,51 @@ class FastRelayRealtime with WidgetsBindingObserver {
     _dispatchEvent(event);
   }
 
+  static bool _isControlMessageType(String type) {
+    return type.startsWith('subscribe.') ||
+        type.startsWith('unsubscribe.') ||
+        type.startsWith('video.');
+  }
+
+  void _handleChatEvent(Map<String, dynamic> payload) {
+    if (_isDisposed || _chatEventController.isClosed) {
+      return;
+    }
+
+    final FastrelayChatEvent event;
+    try {
+      event = FastrelayChatEvent.fromJson(payload);
+    } catch (error, stackTrace) {
+      _emitError(
+        FastrelayRealtimeError(
+          code: 'CHAT_EVENT_PARSE_FAILED',
+          message: 'Failed to parse realtime chat event.',
+          retryable: true,
+          details: payload,
+          cause: error,
+          stackTrace: stackTrace,
+        ),
+      );
+      return;
+    }
+
+    if (event.type.isEmpty) {
+      return;
+    }
+
+    if (event.eventId.isNotEmpty && !_trackEventId(event.eventId)) {
+      return;
+    }
+
+    _chatEventController.add(event);
+  }
+
   void _dispatchVideoStatus(Map<String, dynamic> payload) {
     if (_isDisposed || _videoStatusController.isClosed) {
       return;
     }
 
-    final event = FastRelayVideoStatusEvent.fromJson(payload);
+    final event = FastrelayVideoStatusEvent.fromJson(payload);
     if (event.videoId.isEmpty) {
       return;
     }
@@ -652,7 +785,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
             : 'Realtime error received from server.');
 
     _emitError(
-      FastRelayRealtimeError(
+      FastrelayRealtimeError(
         code: code,
         message: message,
         retryable:
@@ -690,7 +823,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
   }
 
   void _flushSubscriptionBatch() {
-    if (_isDisposed || _connectionState != FastRelayConnectionState.connected) {
+    if (_isDisposed || _connectionState != FastrelayConnectionState.connected) {
       return;
     }
 
@@ -707,17 +840,18 @@ class FastRelayRealtime with WidgetsBindingObserver {
     }
   }
 
-  void _send(Map<String, dynamic> payload) {
+  bool _send(Map<String, dynamic> payload) {
     final socket = _socket;
     if (socket == null || _isDisposed) {
-      return;
+      return false;
     }
 
     try {
       socket.send(jsonEncode(payload));
+      return true;
     } catch (error, stackTrace) {
       _emitError(
-        FastRelayRealtimeError(
+        FastrelayRealtimeError(
           code: 'SEND_FAILED',
           message: 'Failed to send realtime message.',
           retryable: true,
@@ -726,10 +860,11 @@ class FastRelayRealtime with WidgetsBindingObserver {
           details: payload,
         ),
       );
+      return false;
     }
   }
 
-  void _dispatchEvent(FastRelayRealtimeEvent event) {
+  void _dispatchEvent(FastrelayRealtimeEvent event) {
     if (_isDisposed || _eventController.isClosed) {
       return;
     }
@@ -756,7 +891,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     return true;
   }
 
-  void _setConnectionState(FastRelayConnectionState state) {
+  void _setConnectionState(FastrelayConnectionState state) {
     if (_connectionState == state || _stateController.isClosed) {
       _connectionState = state;
       return;
@@ -774,7 +909,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     }
     final serverTimeText = payload['serverTime']?.toString();
     _establishedController.add(
-      FastRelayConnectionEstablished(
+      FastrelayConnectionEstablished(
         connectionId: payload['connectionId']?.toString() ?? '',
         serverTime: serverTimeText == null
             ? null
@@ -784,7 +919,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     );
   }
 
-  void _emitError(FastRelayRealtimeError error) {
+  void _emitError(FastrelayRealtimeError error) {
     if (_errorController.isClosed || _isDisposed) {
       return;
     }
@@ -817,7 +952,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
       }
 
       _emitError(
-        FastRelayRealtimeError(
+        FastrelayRealtimeError(
           code: 'DEAD_CONNECTION_TIMEOUT',
           message:
               'No realtime heartbeat/messages received within the dead connection timeout.',
@@ -845,7 +980,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
 
     final delay = immediate ? Duration.zero : _nextReconnectDelay();
 
-    _setConnectionState(FastRelayConnectionState.reconnecting);
+    _setConnectionState(FastrelayConnectionState.reconnecting);
 
     _reconnectTimer = Timer(delay, () {
       _reconnectTimer = null;
@@ -899,7 +1034,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     final tokenProvider = _tokenProvider;
     if (tokenProvider == null) {
       _emitError(
-        FastRelayRealtimeError(
+        FastrelayRealtimeError(
           code: 'TOKEN_PROVIDER_MISSING',
           message:
               'Realtime token refresh requested but tokenProvider is null.',
@@ -920,7 +1055,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
       return true;
     } catch (error, stackTrace) {
       _emitError(
-        FastRelayRealtimeError(
+        FastrelayRealtimeError(
           code: 'TOKEN_REFRESH_FAILED',
           message: 'Failed to refresh realtime token.',
           retryable: true,
@@ -950,7 +1085,7 @@ class FastRelayRealtime with WidgetsBindingObserver {
     _cancelReconnectTimer();
     _closeSocketResources();
     _acknowledgedFeeds.clear();
-    _setConnectionState(FastRelayConnectionState.disconnected);
+    _setConnectionState(FastrelayConnectionState.disconnected);
   }
 
   void _resumeFromBackground() {
@@ -1038,15 +1173,15 @@ class FastRelayRealtime with WidgetsBindingObserver {
 class _FeedStreamEntry {
   _FeedStreamEntry({required this.controller});
 
-  final StreamController<FastRelayRealtimeEvent> controller;
+  final StreamController<FastrelayRealtimeEvent> controller;
 }
 
-class _WebSocketClientAdapter implements FastRelayRealtimeSocket {
+class _WebSocketClientAdapter implements FastrelayRealtimeSocket {
   _WebSocketClientAdapter(Uri uri) : _socket = ws.WebSocket(uri) {
     connection = _socket.connection
         .map(_mapConnectionState)
         .where((state) => state != null)
-        .cast<FastRelayRealtimeSocketState>();
+        .cast<FastrelayRealtimeSocketState>();
 
     messages = _socket.messages
         .where((message) => message is String)
@@ -1056,7 +1191,7 @@ class _WebSocketClientAdapter implements FastRelayRealtimeSocket {
   final ws.WebSocket _socket;
 
   @override
-  late final Stream<FastRelayRealtimeSocketState> connection;
+  late final Stream<FastrelayRealtimeSocketState> connection;
 
   @override
   late final Stream<String> messages;
@@ -1071,32 +1206,32 @@ class _WebSocketClientAdapter implements FastRelayRealtimeSocket {
     _socket.send(message);
   }
 
-  static FastRelayRealtimeSocketState? _mapConnectionState(
+  static FastrelayRealtimeSocketState? _mapConnectionState(
     ws.ConnectionState state,
   ) {
     if (state is ws.Connecting) {
-      return const FastRelayRealtimeSocketState(
-        status: FastRelayRealtimeSocketStatus.connecting,
+      return const FastrelayRealtimeSocketState(
+        status: FastrelayRealtimeSocketStatus.connecting,
       );
     }
 
     if (state is ws.Connected) {
-      return const FastRelayRealtimeSocketState(
-        status: FastRelayRealtimeSocketStatus.connected,
+      return const FastrelayRealtimeSocketState(
+        status: FastrelayRealtimeSocketStatus.connected,
       );
     }
 
     if (state is ws.Reconnecting || state is ws.Reconnected) {
-      return const FastRelayRealtimeSocketState(
-        status: FastRelayRealtimeSocketStatus.reconnecting,
+      return const FastrelayRealtimeSocketState(
+        status: FastrelayRealtimeSocketStatus.reconnecting,
       );
     }
 
     if (state is ws.Disconnected) {
       final dynamic disconnected = state;
       final Object? code = disconnected.code;
-      return FastRelayRealtimeSocketState(
-        status: FastRelayRealtimeSocketStatus.disconnected,
+      return FastrelayRealtimeSocketState(
+        status: FastrelayRealtimeSocketStatus.disconnected,
         closeCode: code is int ? code : int.tryParse('$code'),
         reason: disconnected.reason?.toString(),
         error: disconnected.error,
@@ -1104,8 +1239,8 @@ class _WebSocketClientAdapter implements FastRelayRealtimeSocket {
     }
 
     if (state is ws.Disconnecting) {
-      return const FastRelayRealtimeSocketState(
-        status: FastRelayRealtimeSocketStatus.reconnecting,
+      return const FastrelayRealtimeSocketState(
+        status: FastrelayRealtimeSocketStatus.reconnecting,
       );
     }
 

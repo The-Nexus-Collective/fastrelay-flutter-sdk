@@ -3,8 +3,8 @@ import 'dart:async';
 import 'fastrelay_client.dart';
 import 'models/models.dart';
 
-class FastRelayFeed {
-  FastRelayFeed(this._client, String group, String id)
+class FastrelayFeed {
+  FastrelayFeed(this._client, String group, String id)
     : group = group.trim(),
       feedId = id.trim() {
     if (this.group.isEmpty || feedId.isEmpty) {
@@ -12,13 +12,13 @@ class FastRelayFeed {
     }
   }
 
-  final FastRelayClient _client;
+  final FastrelayClient _client;
   final String group;
   final String feedId;
 
   String get id => '$group:$feedId';
 
-  Stream<FastRelayRealtimeEvent> events({String? type}) {
+  Stream<FastrelayRealtimeEvent> events({String? type}) {
     final realtime = _client.realtime;
     if (realtime == null) {
       throw StateError(
@@ -28,9 +28,9 @@ class FastRelayFeed {
     return realtime.eventsForFeed(id, type: type);
   }
 
-  StreamSubscription<FastRelayRealtimeEvent> on(
+  StreamSubscription<FastrelayRealtimeEvent> on(
     String type,
-    void Function(FastRelayRealtimeEvent event) callback,
+    void Function(FastrelayRealtimeEvent event) callback,
   ) {
     final normalizedType = type.trim();
     if (normalizedType.isEmpty) {
@@ -41,7 +41,7 @@ class FastRelayFeed {
 
   Future<dynamic> getOrCreate({
     Map<String, dynamic> request = const {},
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.getOrCreateFeed(
       group,
@@ -53,7 +53,7 @@ class FastRelayFeed {
 
   Future<dynamic> getActivities({
     Map<String, dynamic>? query,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.getFeedActivities(
       group,
@@ -63,9 +63,9 @@ class FastRelayFeed {
     );
   }
 
-  Future<CursorPage<FastRelayActivity>> getActivityList({
+  Future<CursorPage<FastrelayActivity>> getActivityList({
     Map<String, dynamic>? query,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.getFeedActivityList(
       group,
@@ -75,9 +75,9 @@ class FastRelayFeed {
     );
   }
 
-  Future<NotificationPage<FastRelayActivity>> getNotificationActivities({
+  Future<NotificationPage<FastrelayActivity>> getNotificationActivities({
     Map<String, dynamic>? query,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.getNotificationFeedActivities(
       group,
@@ -89,7 +89,7 @@ class FastRelayFeed {
 
   Future<dynamic> getCapabilities({
     Map<String, dynamic>? query,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     final scopedQuery = <String, dynamic>{'feed': id, ...?query};
     return _client.getCapabilities(query: scopedQuery, options: options);
@@ -97,7 +97,7 @@ class FastRelayFeed {
 
   Future<dynamic> addActivity(
     Map<String, dynamic> activity, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     final feedName = id;
     final feeds = <String>[
@@ -115,21 +115,21 @@ class FastRelayFeed {
   }
 
   Future<dynamic> delete({
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.deleteFeed(group, feedId, options: options);
   }
 
   Future<dynamic> setVisibility(
     String level, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.setFeedVisibility(group, feedId, level, options: options);
   }
 
   Future<dynamic> updateSettings(
     Map<String, dynamic> settings, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.updateFeedSettings(
       group,
@@ -142,7 +142,7 @@ class FastRelayFeed {
   Future<dynamic> addMember(
     String userId, {
     String role = 'member',
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.addFeedMember(group, feedId, {
       'userId': userId,
@@ -152,14 +152,14 @@ class FastRelayFeed {
 
   Future<dynamic> removeMember(
     String userId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.removeFeedMember(group, feedId, userId, options: options);
   }
 
   Future<dynamic> listMembers({
     Map<String, dynamic>? query,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.listFeedMembers(
       group,
@@ -172,7 +172,7 @@ class FastRelayFeed {
   Future<dynamic> follow(
     Object target, {
     int? activityCopyLimit,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.followFeed(group, feedId, {
       'target': target,
@@ -185,7 +185,7 @@ class FastRelayFeed {
   Future<dynamic> batchFollow(
     List<Object> targets, {
     int? activityCopyLimit,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.batchFollowFeed(group, feedId, {
       'targets': targets,
@@ -198,7 +198,7 @@ class FastRelayFeed {
   Future<dynamic> unfollow(
     Object target, {
     bool? keepHistory,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.unfollowFeed(
       group,
@@ -211,21 +211,21 @@ class FastRelayFeed {
 
   Future<dynamic> listFollowers({
     Map<String, dynamic>? query,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.listFollowers(group, feedId, query: query, options: options);
   }
 
   Future<dynamic> listFollowing({
     Map<String, dynamic>? query,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.listFollowing(group, feedId, query: query, options: options);
   }
 
   Future<dynamic> listFollowRequests({
     Map<String, dynamic>? query,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.listFollowRequests(
       group,
@@ -237,7 +237,7 @@ class FastRelayFeed {
 
   Future<dynamic> approveFollowRequest(
     String requestId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.approveFollowRequest(
       group,
@@ -249,7 +249,7 @@ class FastRelayFeed {
 
   Future<dynamic> rejectFollowRequest(
     String requestId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.rejectFollowRequest(
       group,
@@ -259,10 +259,10 @@ class FastRelayFeed {
     );
   }
 
-  Future<FastRelayReaction> addReaction(
+  Future<FastrelayReaction> addReaction(
     String activityId, {
     required String type,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.addReaction(activityId, type: type, options: options);
   }
@@ -270,17 +270,17 @@ class FastRelayFeed {
   Future<void> removeReaction(
     String activityId,
     String reactionId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.removeReaction(activityId, reactionId, options: options);
   }
 
-  Future<FastRelayComment> addComment(
+  Future<FastrelayComment> addComment(
     String activityId, {
     required String text,
     String? parentId,
     List<String>? mentionedUsers,
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.addComment(
       activityId,
@@ -291,30 +291,30 @@ class FastRelayFeed {
     );
   }
 
-  Future<FastRelayBookmark> addBookmark(
+  Future<FastrelayBookmark> addBookmark(
     String activityId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.addBookmark(activityId, options: options);
   }
 
   Future<void> removeBookmark(
     String activityId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.removeBookmark(activityId, options: options);
   }
 
-  Future<FastRelayFeedActivityPin> pinActivity(
+  Future<FastrelayFeedActivityPin> pinActivity(
     String activityId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.pinActivity(group, feedId, activityId, options: options);
   }
 
   Future<void> unpinActivity(
     String activityId, {
-    FastRelayRequestOptions options = const FastRelayRequestOptions(),
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.unpinActivity(group, feedId, activityId, options: options);
   }

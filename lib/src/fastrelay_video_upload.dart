@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 
 import 'fastrelay_client.dart';
 
-class FastRelayVideoUploadProgress {
-  const FastRelayVideoUploadProgress({
+class FastrelayVideoUploadProgress {
+  const FastrelayVideoUploadProgress({
     required this.bytesUploaded,
     required this.totalBytes,
   });
@@ -17,8 +17,8 @@ class FastRelayVideoUploadProgress {
       totalBytes <= 0 ? 0 : (bytesUploaded / totalBytes).clamp(0.0, 1.0);
 }
 
-class FastRelayVideoUploadResult {
-  const FastRelayVideoUploadResult({
+class FastrelayVideoUploadResult {
+  const FastrelayVideoUploadResult({
     required this.videoId,
     required this.uploadUrl,
     required this.bytesUploaded,
@@ -29,8 +29,8 @@ class FastRelayVideoUploadResult {
   final int bytesUploaded;
 }
 
-class FastRelayVideoUploadException implements Exception {
-  FastRelayVideoUploadException(this.message, {this.statusCode, this.cause});
+class FastrelayVideoUploadException implements Exception {
+  FastrelayVideoUploadException(this.message, {this.statusCode, this.cause});
 
   final String message;
   final int? statusCode;
@@ -38,12 +38,12 @@ class FastRelayVideoUploadException implements Exception {
 
   @override
   String toString() =>
-      'FastRelayVideoUploadException(${statusCode ?? ''}): $message';
+      'FastrelayVideoUploadException(${statusCode ?? ''}): $message';
 }
 
 /// Drives a tus 1.0.0 upload of [bytes] to [uploadUrl].
 ///
-/// The upload URL is the one returned by [FastRelayClient.createVideoUploadUrl],
+/// The upload URL is the one returned by [FastrelayClient.createVideoUploadUrl],
 /// which is Cloudflare Stream's tus endpoint pre-authorized by the backend.
 /// Emits [onProgress] after each PATCH chunk and returns when the full payload
 /// has been accepted.
@@ -51,7 +51,7 @@ Future<int> tusUploadBytes({
   required String uploadUrl,
   required List<int> bytes,
   int chunkSize = 50 * 1024 * 1024,
-  void Function(FastRelayVideoUploadProgress progress)? onProgress,
+  void Function(FastrelayVideoUploadProgress progress)? onProgress,
   http.Client? httpClient,
 }) async {
   if (uploadUrl.trim().isEmpty) {
@@ -69,7 +69,7 @@ Future<int> tusUploadBytes({
   try {
     int offset = 0;
     onProgress?.call(
-      FastRelayVideoUploadProgress(bytesUploaded: 0, totalBytes: total),
+      FastrelayVideoUploadProgress(bytesUploaded: 0, totalBytes: total),
     );
 
     while (offset < total) {
@@ -87,7 +87,7 @@ Future<int> tusUploadBytes({
       );
 
       if (response.statusCode != 204 && response.statusCode != 200) {
-        throw FastRelayVideoUploadException(
+        throw FastrelayVideoUploadException(
           'tus PATCH failed: ${response.statusCode} ${response.reasonPhrase ?? ''} ${response.body}'
               .trim(),
           statusCode: response.statusCode,
@@ -100,7 +100,7 @@ Future<int> tusUploadBytes({
       offset = reportedOffset;
 
       onProgress?.call(
-        FastRelayVideoUploadProgress(
+        FastrelayVideoUploadProgress(
           bytesUploaded: offset,
           totalBytes: total,
         ),
@@ -117,16 +117,16 @@ Future<int> tusUploadBytes({
 
 /// High-level helper: mints a tus upload URL via the backend, then uploads
 /// [bytes] directly to Cloudflare Stream via tus PATCH. Returns the
-/// [FastRelayVideoUploadResult]; the caller subscribes to `video.ready` over
-/// the realtime channel (or polls [FastRelayClient.getVideo]) for the final
+/// [FastrelayVideoUploadResult]; the caller subscribes to `video.ready` over
+/// the realtime channel (or polls [FastrelayClient.getVideo]) for the final
 /// `ready` state.
-Future<FastRelayVideoUploadResult> uploadVideoBytes(
-  FastRelayClient client, {
+Future<FastrelayVideoUploadResult> uploadVideoBytes(
+  FastrelayClient client, {
   required List<int> bytes,
   required String filename,
   required String mimeType,
   int chunkSize = 50 * 1024 * 1024,
-  void Function(FastRelayVideoUploadProgress progress)? onProgress,
+  void Function(FastrelayVideoUploadProgress progress)? onProgress,
   http.Client? httpClient,
 }) async {
   if (bytes.isEmpty) {
@@ -155,7 +155,7 @@ Future<FastRelayVideoUploadResult> uploadVideoBytes(
     httpClient: httpClient,
   );
 
-  return FastRelayVideoUploadResult(
+  return FastrelayVideoUploadResult(
     videoId: mint.videoId,
     uploadUrl: mint.uploadUrl,
     bytesUploaded: uploaded,

@@ -22,7 +22,7 @@ void main() {
     'feed.addActivity injects feed id and sends camelCase payload',
     () async {
       late http.Request captured;
-      final fastrelay = FastRelayClient(
+      final fastrelay = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -60,7 +60,7 @@ void main() {
 
   test('feed.getActivities serializes filter params and markRead', () async {
     late http.Request captured;
-    final fastrelay = FastRelayClient(
+    final fastrelay = FastrelayClient(
       apiKey: 'key_123',
       token: 'jwt_123',
       baseUrl: 'https://api.fastrelay.io',
@@ -101,7 +101,7 @@ void main() {
 
   test('requests without a token are sent unauthenticated', () async {
     late http.Request captured;
-    final fastrelay = FastRelayClient(
+    final fastrelay = FastrelayClient(
       apiKey: 'public_key',
       baseUrl: 'https://api.fastrelay.io',
       httpClient: MockClient((request) async {
@@ -117,7 +117,7 @@ void main() {
 
   test('capabilities namespace fetches capability payload', () async {
     late http.Request captured;
-    final fastrelay = FastRelayClient(
+    final fastrelay = FastrelayClient(
       apiKey: 'key_123',
       token: 'jwt_123',
       baseUrl: 'https://api.fastrelay.io',
@@ -145,7 +145,7 @@ void main() {
 
   test('feed.getCapabilities scopes to feed id by default', () async {
     late http.Request captured;
-    final fastrelay = FastRelayClient(
+    final fastrelay = FastrelayClient(
       apiKey: 'key_123',
       token: 'jwt_123',
       baseUrl: 'https://api.fastrelay.io',
@@ -165,8 +165,8 @@ void main() {
     expect((response as Map<String, dynamic>)['canAddActivity'], isTrue);
   });
 
-  test('maps API errors to FastRelayApiError', () async {
-    final fastrelay = FastRelayClient(
+  test('maps API errors to FastrelayApiError', () async {
+    final fastrelay = FastrelayClient(
       apiKey: 'key_123',
       token: 'jwt_123',
       httpClient: MockClient((_) async {
@@ -186,7 +186,7 @@ void main() {
     await expectLater(
       () => fastrelay.activities.get('act_missing'),
       throwsA(
-        isA<FastRelayApiError>()
+        isA<FastrelayApiError>()
             .having((error) => error.status, 'status', 404)
             .having((error) => error.code, 'code', 'ACTIVITY_NOT_FOUND')
             .having((error) => error.requestId, 'requestId', 'req_123')
@@ -206,7 +206,7 @@ void main() {
 
   test('connectUser with upsertUser self-upserts via POST /v1/users', () async {
     final requests = <http.Request>[];
-    final fastrelay = FastRelayClient(
+    final fastrelay = FastrelayClient(
       apiKey: 'key_123',
       baseUrl: 'https://api.fastrelay.io',
       httpClient: MockClient((request) async {
@@ -239,7 +239,7 @@ void main() {
 
   test('connectUser without upsertUser makes no requests', () async {
     final requests = <http.Request>[];
-    final fastrelay = FastRelayClient(
+    final fastrelay = FastrelayClient(
       apiKey: 'key_123',
       httpClient: MockClient((request) async {
         requests.add(request);

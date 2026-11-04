@@ -1,5 +1,5 @@
-class FastRelayModerationFlag {
-  const FastRelayModerationFlag({
+class FastrelayModerationFlag {
+  const FastrelayModerationFlag({
     required this.id,
     required this.reporterId,
     required this.targetType,
@@ -23,10 +23,10 @@ class FastRelayModerationFlag {
   final DateTime? resolvedAt;
   final DateTime createdAt;
 
-  factory FastRelayModerationFlag.fromJson(Map<String, dynamic> json) {
+  factory FastrelayModerationFlag.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now().toUtc();
 
-    return FastRelayModerationFlag(
+    return FastrelayModerationFlag(
       id: json['id']?.toString() ?? '',
       reporterId: json['reporterId']?.toString() ?? '',
       targetType: json['targetType']?.toString() ?? '',

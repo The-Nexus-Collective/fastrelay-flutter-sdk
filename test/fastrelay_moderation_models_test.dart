@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('moderation models', () {
-    test('FastRelayModerationFlag parses resolved fields', () {
-      final flag = FastRelayModerationFlag.fromJson({
+    test('FastrelayModerationFlag parses resolved fields', () {
+      final flag = FastrelayModerationFlag.fromJson({
         'id': 'flag_1',
         'reporterId': 'user_alice',
         'targetType': 'activity',
@@ -23,7 +23,7 @@ void main() {
     });
 
     test('mute model parses optional moderation fields', () {
-      final mute = FastRelayUserMute.fromJson({
+      final mute = FastrelayUserMute.fromJson({
         'id': 'mut_1',
         'muterId': 'user_alice',
         'mutedUserId': 'user_bob',

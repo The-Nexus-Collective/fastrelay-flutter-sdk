@@ -35,7 +35,7 @@ void main() {
       'addReaction posts reaction payload and parses typed response',
       () async {
         late http.BaseRequest captured;
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
           baseUrl: 'https://api.fastrelay.io',
@@ -71,7 +71,7 @@ void main() {
 
     test('listReactions serializes filters and parses cursor page', () async {
       late http.BaseRequest captured;
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -115,7 +115,7 @@ void main() {
         late http.BaseRequest listRequest;
         var requestCount = 0;
 
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
           baseUrl: 'https://api.fastrelay.io',
@@ -184,7 +184,7 @@ void main() {
 
     test('comment reaction methods send expected paths', () async {
       final paths = <String>[];
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -217,7 +217,7 @@ void main() {
 
     test('bookmark methods parse typed responses', () async {
       var requestCount = 0;
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -255,7 +255,7 @@ void main() {
 
     test('poll methods map choices/options and optionId payload', () async {
       final requests = <http.BaseRequest>[];
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -266,7 +266,7 @@ void main() {
               'id': 'poll_1',
               'question': 'Best SDK?',
               'options': [
-                {'id': 'opt_1', 'text': 'FastRelay', 'voteCount': 1},
+                {'id': 'opt_1', 'text': 'fastrelay', 'voteCount': 1},
               ],
               'totalVotes': 1,
               'userVote': {'optionId': 'opt_1'},
@@ -278,7 +278,7 @@ void main() {
             'id': 'poll_1',
             'question': 'Best SDK?',
             'options': [
-              {'id': 'opt_1', 'text': 'FastRelay', 'voteCount': 0},
+              {'id': 'opt_1', 'text': 'fastrelay', 'voteCount': 0},
             ],
             'totalVotes': 0,
             'userVote': null,
@@ -291,7 +291,7 @@ void main() {
         'act_1',
         question: 'Best SDK?',
         choices: const [
-          {'id': 'opt_1', 'text': 'FastRelay'},
+          {'id': 'opt_1', 'text': 'fastrelay'},
         ],
         maxVotesPerUser: 2,
         anonymous: true,
@@ -302,7 +302,7 @@ void main() {
       final voteBody = jsonDecode((requests.last as http.Request).body);
 
       expect(createBody['options'], [
-        {'id': 'opt_1', 'text': 'FastRelay'},
+        {'id': 'opt_1', 'text': 'fastrelay'},
       ]);
       expect(createBody['maxVotesPerUser'], 2);
       expect(createBody['anonymous'], isTrue);
@@ -314,7 +314,7 @@ void main() {
 
     test('uploadFile sends multipart request and parses response', () async {
       late http.BaseRequest captured;
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -352,7 +352,7 @@ void main() {
 
     test('uploadFileDirect reserves, PUTs to storage and confirms', () async {
       final requests = <http.BaseRequest>[];
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -424,7 +424,7 @@ void main() {
 
     test('uploadFileDirect does not confirm when the PUT fails', () async {
       final requests = <http.BaseRequest>[];
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -448,7 +448,7 @@ void main() {
       await expectLater(
         client.uploadFileDirect(const [0, 1, 2, 3], 'image/png'),
         throwsA(
-          isA<FastRelayApiError>()
+          isA<FastrelayApiError>()
               .having((e) => e.status, 'status', 403)
               .having((e) => e.method, 'method', 'PUT'),
         ),
@@ -458,7 +458,7 @@ void main() {
 
     test('submitFeedback validates type and posts payload', () async {
       late http.BaseRequest captured;
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -489,7 +489,7 @@ void main() {
 
     test('typed feed methods parse cursor and notification pages', () async {
       var requestCount = 0;
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -532,7 +532,7 @@ void main() {
     });
 
     test('namespaced APIs delegate to typed methods', () async {
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',

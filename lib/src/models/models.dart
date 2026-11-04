@@ -1,12 +1,16 @@
 export 'activity.dart';
 export 'bookmark.dart';
+export 'chat_event.dart';
+export 'chat_sync.dart';
 export 'comment.dart';
 export 'comment_reaction.dart';
 export 'connection_established.dart';
+export 'conversation.dart';
 export 'cursor_page.dart';
 export 'feed_activity_pin.dart';
 export 'feedback.dart';
 export 'file.dart';
+export 'message.dart';
 export 'moderation_flag.dart';
 export 'poll.dart';
 export 'reaction.dart';
