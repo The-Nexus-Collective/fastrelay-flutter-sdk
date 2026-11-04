@@ -1,7 +1,7 @@
 import 'user.dart';
 
-class FastRelayComment {
-  const FastRelayComment({
+class FastrelayComment {
+  const FastrelayComment({
     required this.id,
     required this.activityId,
     required this.userId,
@@ -22,7 +22,7 @@ class FastRelayComment {
 
   /// Author user object embedded by the server. `null` when the author has
   /// no user record or the payload was not enriched.
-  final FastRelayUser? user;
+  final FastrelayUser? user;
   final String text;
   final String? parentId;
   final List<String> mentionedUsers;
@@ -36,19 +36,19 @@ class FastRelayComment {
 
   bool get isReply => parentId != null && parentId!.isNotEmpty;
 
-  factory FastRelayComment.fromJson(Map<String, dynamic> json) {
+  factory FastrelayComment.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now().toUtc();
     final reactionCounts = _asMap(
       json['reactionCounts'],
     ).map((key, value) => MapEntry(key, _readInt(value) ?? 0));
     final custom = _asMap(json['custom']);
 
-    return FastRelayComment(
+    return FastrelayComment(
       id: json['id']?.toString() ?? '',
       activityId: json['activityId']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       user: json['user'] is Map
-          ? FastRelayUser.fromJson(_asMap(json['user']))
+          ? FastrelayUser.fromJson(_asMap(json['user']))
           : null,
       text: json['text']?.toString() ?? '',
       parentId: json['parentId']?.toString(),

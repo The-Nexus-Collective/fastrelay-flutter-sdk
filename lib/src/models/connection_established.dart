@@ -1,5 +1,5 @@
-class FastRelayConnectionEstablished {
-  const FastRelayConnectionEstablished({
+class FastrelayConnectionEstablished {
+  const FastrelayConnectionEstablished({
     required this.connectionId,
     required this.serverTime,
     required this.isReconnect,

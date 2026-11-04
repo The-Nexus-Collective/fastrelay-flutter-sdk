@@ -60,7 +60,7 @@ void main() {
   group('FeedPollingService', () {
     test('pollFeed emits initial and interval updates', () async {
       var count = 0;
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -90,7 +90,7 @@ void main() {
 
     test('pause and resume adjust polling behavior', () async {
       var count = 0;
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -130,7 +130,7 @@ void main() {
 
     test('polling errors are emitted and stream continues', () async {
       var count = 0;
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',
@@ -152,7 +152,7 @@ void main() {
       );
 
       final errorCompleter = Completer<void>();
-      final dataCompleter = Completer<CursorPage<FastRelayActivity>>();
+      final dataCompleter = Completer<CursorPage<FastrelayActivity>>();
 
       final subscription = service
           .pollFeed('timeline', 'john')
@@ -183,7 +183,7 @@ void main() {
     });
 
     test('pollNotifications emits notification counters', () async {
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'key_123',
         token: 'jwt_123',
         baseUrl: 'https://api.fastrelay.io',

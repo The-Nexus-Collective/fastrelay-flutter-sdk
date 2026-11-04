@@ -2,8 +2,8 @@
 ///
 /// System messages (`type == 'system'`) have no [userId] or [text]; their
 /// [custom] carries `{event, actorId, userIds}`.
-class FastRelayMessage {
-  const FastRelayMessage({
+class FastrelayMessage {
+  const FastrelayMessage({
     required this.id,
     required this.conversationId,
     required this.seq,
@@ -39,7 +39,7 @@ class FastRelayMessage {
   final String? replyToId;
 
   /// Preview of the message this one replies to, when [replyToId] is set.
-  final FastRelayReplyPreview? replyTo;
+  final FastrelayReplyPreview? replyTo;
   final DateTime? editedAt;
   final DateTime? deletedAt;
   final DateTime createdAt;
@@ -49,10 +49,10 @@ class FastRelayMessage {
   bool get isEdited => editedAt != null;
   bool get isDeleted => deletedAt != null;
 
-  factory FastRelayMessage.fromJson(Map<String, dynamic> json) {
+  factory FastrelayMessage.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now().toUtc();
 
-    return FastRelayMessage(
+    return FastrelayMessage(
       id: json['id']?.toString() ?? '',
       conversationId: json['conversationId']?.toString() ?? '',
       seq: _readInt(json['seq']) ?? 0,
@@ -63,7 +63,7 @@ class FastRelayMessage {
       custom: _asMap(json['custom']),
       replyToId: json['replyToId']?.toString(),
       replyTo: json['replyTo'] is Map
-          ? FastRelayReplyPreview.fromJson(_asMap(json['replyTo']))
+          ? FastrelayReplyPreview.fromJson(_asMap(json['replyTo']))
           : null,
       editedAt: _parseDateTime(json['editedAt']),
       deletedAt: _parseDateTime(json['deletedAt']),
@@ -92,9 +92,9 @@ class FastRelayMessage {
   }
 }
 
-/// Compact preview of a replied-to message embedded in [FastRelayMessage].
-class FastRelayReplyPreview {
-  const FastRelayReplyPreview({
+/// Compact preview of a replied-to message embedded in [FastrelayMessage].
+class FastrelayReplyPreview {
+  const FastrelayReplyPreview({
     required this.id,
     this.seq,
     this.userId,
@@ -108,8 +108,8 @@ class FastRelayReplyPreview {
   final String? text;
   final bool deleted;
 
-  factory FastRelayReplyPreview.fromJson(Map<String, dynamic> json) {
-    return FastRelayReplyPreview(
+  factory FastrelayReplyPreview.fromJson(Map<String, dynamic> json) {
+    return FastrelayReplyPreview(
       id: json['id']?.toString() ?? '',
       seq: _readInt(json['seq']),
       userId: json['userId']?.toString(),

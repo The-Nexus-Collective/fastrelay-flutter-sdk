@@ -1,5 +1,5 @@
-class FastRelayUser {
-  const FastRelayUser({
+class FastrelayUser {
+  const FastrelayUser({
     required this.id,
     this.displayName,
     this.profileData,
@@ -38,11 +38,11 @@ class FastRelayUser {
     return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
   }
 
-  factory FastRelayUser.fromJson(Map<String, dynamic> json) {
+  factory FastrelayUser.fromJson(Map<String, dynamic> json) {
     final profileData = _asMap(json['profileData']);
     final now = DateTime.now().toUtc();
 
-    return FastRelayUser(
+    return FastrelayUser(
       id: json['id']?.toString() ?? '',
       displayName: json['displayName']?.toString(),
       profileData: profileData.isEmpty ? null : profileData,

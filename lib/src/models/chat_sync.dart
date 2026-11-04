@@ -2,8 +2,8 @@ import 'conversation.dart';
 import 'message.dart';
 
 /// Unread counters across all of the user's conversations.
-class FastRelayUnreadTotals {
-  const FastRelayUnreadTotals({
+class FastrelayUnreadTotals {
+  const FastrelayUnreadTotals({
     this.totalUnread = 0,
     this.unreadConversations = 0,
   });
@@ -11,8 +11,8 @@ class FastRelayUnreadTotals {
   final int totalUnread;
   final int unreadConversations;
 
-  factory FastRelayUnreadTotals.fromJson(Map<String, dynamic> json) {
-    return FastRelayUnreadTotals(
+  factory FastrelayUnreadTotals.fromJson(Map<String, dynamic> json) {
+    return FastrelayUnreadTotals(
       totalUnread: _readInt(json['totalUnread']) ?? 0,
       unreadConversations: _readInt(json['unreadConversations']) ?? 0,
     );
@@ -27,26 +27,26 @@ class FastRelayUnreadTotals {
 }
 
 /// Result of `syncChat`: everything that changed since the given anchor.
-class FastRelayChatSync {
-  const FastRelayChatSync({
+class FastrelayChatSync {
+  const FastrelayChatSync({
     required this.serverTime,
     this.conversations = const [],
     this.messages = const [],
     this.removedConversationIds = const [],
     this.reloadConversationIds = const [],
     this.reloadAll = false,
-    this.unread = const FastRelayUnreadTotals(),
+    this.unread = const FastrelayUnreadTotals(),
   });
 
   /// Pass as `since` on the next sync.
   final DateTime serverTime;
 
   /// Conversations changed since the anchor.
-  final List<FastRelayConversation> conversations;
+  final List<FastrelayConversation> conversations;
 
   /// Messages created, edited or deleted since the anchor, in changed
   /// conversations not listed in [reloadConversationIds].
-  final List<FastRelayMessage> messages;
+  final List<FastrelayMessage> messages;
 
   /// Requested conversations the user can no longer access.
   final List<String> removedConversationIds;
@@ -57,22 +57,22 @@ class FastRelayChatSync {
   /// Too many conversations changed; reload all conversations with
   /// `queryConversations`.
   final bool reloadAll;
-  final FastRelayUnreadTotals unread;
+  final FastrelayUnreadTotals unread;
 
-  factory FastRelayChatSync.fromJson(Map<String, dynamic> json) {
-    return FastRelayChatSync(
+  factory FastrelayChatSync.fromJson(Map<String, dynamic> json) {
+    return FastrelayChatSync(
       serverTime: _parseDateTime(json['serverTime']) ?? DateTime.now().toUtc(),
       conversations: _mapEntries(
         json['conversations'],
-        FastRelayConversation.fromJson,
+        FastrelayConversation.fromJson,
       ),
-      messages: _mapEntries(json['messages'], FastRelayMessage.fromJson),
+      messages: _mapEntries(json['messages'], FastrelayMessage.fromJson),
       removedConversationIds: _asStringList(json['removedConversationIds']),
       reloadConversationIds: _asStringList(json['reloadConversationIds']),
       reloadAll: json['reloadAll'] == true,
       unread: json['unread'] is Map
-          ? FastRelayUnreadTotals.fromJson(_asMap(json['unread']))
-          : const FastRelayUnreadTotals(),
+          ? FastrelayUnreadTotals.fromJson(_asMap(json['unread']))
+          : const FastrelayUnreadTotals(),
     );
   }
 

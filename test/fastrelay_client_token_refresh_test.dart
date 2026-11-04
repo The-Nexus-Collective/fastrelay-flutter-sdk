@@ -32,11 +32,11 @@ http.StreamedResponse _unauthorized() {
   }, status: 401);
 }
 
-Future<FastRelayClient> _connectedClient(
+Future<FastrelayClient> _connectedClient(
   http.Client httpClient, {
-  FastRelayTokenProvider? tokenProvider,
+  FastrelayTokenProvider? tokenProvider,
 }) async {
-  final client = FastRelayClient(
+  final client = FastrelayClient(
     apiKey: 'key_123',
     baseUrl: 'https://api.fastrelay.io',
     httpClient: httpClient,
@@ -93,7 +93,7 @@ void main() {
       await expectLater(
         client.getActivity('act_1'),
         throwsA(
-          isA<FastRelayApiError>().having((e) => e.status, 'status', 401),
+          isA<FastrelayApiError>().having((e) => e.status, 'status', 401),
         ),
       );
       expect(providerCalls, 1);
@@ -107,7 +107,7 @@ void main() {
       await expectLater(
         client.getActivity('act_1'),
         throwsA(
-          isA<FastRelayApiError>().having((e) => e.status, 'status', 401),
+          isA<FastrelayApiError>().having((e) => e.status, 'status', 401),
         ),
       );
       expect(httpClient.requests, hasLength(1));

@@ -1,7 +1,7 @@
 import 'user.dart';
 
-class FastRelayReaction {
-  const FastRelayReaction({
+class FastrelayReaction {
+  const FastrelayReaction({
     required this.id,
     required this.activityId,
     required this.userId,
@@ -16,17 +16,17 @@ class FastRelayReaction {
 
   /// Reactor user object embedded by the server. `null` when the reactor has
   /// no user record or the payload was not enriched.
-  final FastRelayUser? user;
+  final FastrelayUser? user;
   final String type;
   final DateTime createdAt;
 
-  factory FastRelayReaction.fromJson(Map<String, dynamic> json) {
-    return FastRelayReaction(
+  factory FastrelayReaction.fromJson(Map<String, dynamic> json) {
+    return FastrelayReaction(
       id: json['id']?.toString() ?? '',
       activityId: json['activityId']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       user: json['user'] is Map
-          ? FastRelayUser.fromJson(
+          ? FastrelayUser.fromJson(
               (json['user'] as Map).map(
                 (key, value) => MapEntry(key.toString(), value),
               ),

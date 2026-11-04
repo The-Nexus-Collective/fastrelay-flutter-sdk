@@ -1,5 +1,5 @@
-class FastRelayBookmark {
-  const FastRelayBookmark({
+class FastrelayBookmark {
+  const FastrelayBookmark({
     required this.id,
     required this.activityId,
     required this.userId,
@@ -11,8 +11,8 @@ class FastRelayBookmark {
   final String userId;
   final DateTime createdAt;
 
-  factory FastRelayBookmark.fromJson(Map<String, dynamic> json) {
-    return FastRelayBookmark(
+  factory FastrelayBookmark.fromJson(Map<String, dynamic> json) {
+    return FastrelayBookmark(
       id: json['id']?.toString() ?? '',
       activityId: json['activityId']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',

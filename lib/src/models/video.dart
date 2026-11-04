@@ -1,5 +1,5 @@
-class FastRelayVideo {
-  const FastRelayVideo({
+class FastrelayVideo {
+  const FastrelayVideo({
     required this.id,
     required this.mimeType,
     required this.sizeBytes,
@@ -33,8 +33,8 @@ class FastRelayVideo {
   bool get isFailed => status == 'failed';
   bool get isProcessing => status == 'uploading' || status == 'processing';
 
-  factory FastRelayVideo.fromJson(Map<String, dynamic> json) {
-    return FastRelayVideo(
+  factory FastrelayVideo.fromJson(Map<String, dynamic> json) {
+    return FastrelayVideo(
       id: json['id']?.toString() ?? '',
       mimeType: json['mimeType']?.toString() ?? 'video/mp4',
       sizeBytes: _readInt(json['sizeBytes']) ?? 0,
@@ -72,8 +72,8 @@ class FastRelayVideo {
   }
 }
 
-class FastRelayVideoUploadUrl {
-  const FastRelayVideoUploadUrl({
+class FastrelayVideoUploadUrl {
+  const FastrelayVideoUploadUrl({
     required this.videoId,
     required this.uploadUrl,
     this.protocol = 'tus',
@@ -83,8 +83,8 @@ class FastRelayVideoUploadUrl {
   final String uploadUrl;
   final String protocol;
 
-  factory FastRelayVideoUploadUrl.fromJson(Map<String, dynamic> json) {
-    return FastRelayVideoUploadUrl(
+  factory FastrelayVideoUploadUrl.fromJson(Map<String, dynamic> json) {
+    return FastrelayVideoUploadUrl(
       videoId: json['videoId']?.toString() ?? '',
       uploadUrl: json['uploadUrl']?.toString() ?? '',
       protocol: json['protocol']?.toString() ?? 'tus',
@@ -92,8 +92,8 @@ class FastRelayVideoUploadUrl {
   }
 }
 
-class FastRelayVideoStatusEvent {
-  const FastRelayVideoStatusEvent({
+class FastrelayVideoStatusEvent {
+  const FastrelayVideoStatusEvent({
     required this.type,
     required this.videoId,
     this.video,
@@ -103,22 +103,22 @@ class FastRelayVideoStatusEvent {
 
   final String type;
   final String videoId;
-  final FastRelayVideo? video;
+  final FastrelayVideo? video;
   final String? errorCode;
   final String? errorMessage;
 
   bool get isReady => type == 'video.ready';
   bool get isFailed => type == 'video.failed';
 
-  factory FastRelayVideoStatusEvent.fromJson(Map<String, dynamic> json) {
+  factory FastrelayVideoStatusEvent.fromJson(Map<String, dynamic> json) {
     final videoPayload = json['video'];
-    return FastRelayVideoStatusEvent(
+    return FastrelayVideoStatusEvent(
       type: json['type']?.toString() ?? '',
       videoId: json['videoId']?.toString() ?? '',
       video: videoPayload is Map<String, dynamic>
-          ? FastRelayVideo.fromJson(videoPayload)
+          ? FastrelayVideo.fromJson(videoPayload)
           : videoPayload is Map
-          ? FastRelayVideo.fromJson(
+          ? FastrelayVideo.fromJson(
               videoPayload.map((k, v) => MapEntry(k.toString(), v)),
             )
           : null,

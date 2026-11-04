@@ -1,5 +1,5 @@
-class FastRelayRealtimeEvent {
-  FastRelayRealtimeEvent({
+class FastrelayRealtimeEvent {
+  FastrelayRealtimeEvent({
     required this.type,
     required this.feedId,
     required this.eventId,
@@ -15,14 +15,14 @@ class FastRelayRealtimeEvent {
   final DateTime createdAt;
   final Map<String, dynamic> data;
 
-  factory FastRelayRealtimeEvent.fromJson(Map<String, dynamic> json) {
+  factory FastrelayRealtimeEvent.fromJson(Map<String, dynamic> json) {
     final createdAtText = json['createdAt']?.toString();
     final createdAt = createdAtText == null
         ? DateTime.now().toUtc()
         : DateTime.tryParse(createdAtText)?.toUtc() ?? DateTime.now().toUtc();
 
     final data = json['data'];
-    return FastRelayRealtimeEvent(
+    return FastrelayRealtimeEvent(
       type: json['type']?.toString() ?? '',
       feedId: json['feedId']?.toString() ?? '',
       eventId: json['eventId']?.toString() ?? '',
@@ -56,15 +56,15 @@ class FastRelayRealtimeEvent {
   }
 }
 
-enum FastRelayConnectionState {
+enum FastrelayConnectionState {
   disconnected,
   connecting,
   connected,
   reconnecting,
 }
 
-class FastRelayRealtimeError {
-  FastRelayRealtimeError({
+class FastrelayRealtimeError {
+  FastrelayRealtimeError({
     required this.code,
     required this.message,
     this.retryable = false,

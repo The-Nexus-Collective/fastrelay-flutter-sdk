@@ -2,8 +2,8 @@ import 'message.dart';
 import 'user.dart';
 
 /// A chat conversation (direct or group).
-class FastRelayConversation {
-  const FastRelayConversation({
+class FastrelayConversation {
+  const FastrelayConversation({
     required this.id,
     this.kind = 'group',
     required this.type,
@@ -46,25 +46,25 @@ class FastRelayConversation {
 
   /// The first 100 members by join time. `null` when omitted (realtime
   /// events); page through the rest with `listConversationMembers`.
-  final List<FastRelayConversationMember>? members;
+  final List<FastrelayConversationMember>? members;
 
   /// Unread messages for the requesting user, when the server scoped the
   /// response to a user.
   final int? unreadCount;
 
   /// Latest message visible to the requesting user. Query results only.
-  final FastRelayMessage? lastMessage;
+  final FastrelayMessage? lastMessage;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   bool get isDirect => kind == 'direct';
   bool get isGroup => kind == 'group';
 
-  factory FastRelayConversation.fromJson(Map<String, dynamic> json) {
+  factory FastrelayConversation.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now().toUtc();
     final rawMembers = json['members'];
 
-    return FastRelayConversation(
+    return FastrelayConversation(
       id: json['id']?.toString() ?? '',
       kind: json['kind']?.toString() ?? 'group',
       type: json['type']?.toString() ?? '',
@@ -84,13 +84,13 @@ class FastRelayConversation {
                 .whereType<Map>()
                 .map(
                   (entry) =>
-                      FastRelayConversationMember.fromJson(_asMap(entry)),
+                      FastrelayConversationMember.fromJson(_asMap(entry)),
                 )
                 .toList()
           : null,
       unreadCount: _readInt(json['unreadCount']),
       lastMessage: json['lastMessage'] is Map
-          ? FastRelayMessage.fromJson(_asMap(json['lastMessage']))
+          ? FastrelayMessage.fromJson(_asMap(json['lastMessage']))
           : null,
       createdAt: _parseDateTime(json['createdAt']) ?? now,
       updatedAt: _parseDateTime(json['updatedAt']) ?? now,
@@ -122,9 +122,9 @@ class FastRelayConversation {
   }
 }
 
-/// A member of a [FastRelayConversation] with their read/delivery cursors.
-class FastRelayConversationMember {
-  const FastRelayConversationMember({
+/// A member of a [FastrelayConversation] with their read/delivery cursors.
+class FastrelayConversationMember {
+  const FastrelayConversationMember({
     required this.userId,
     this.user,
     this.role = 'member',
@@ -143,7 +143,7 @@ class FastRelayConversationMember {
 
   /// Embedded user record. `null` when the user has no record or the payload
   /// was not enriched.
-  final FastRelayUser? user;
+  final FastrelayUser? user;
 
   /// `'owner'`, `'moderator'` or `'member'`.
   final String role;
@@ -161,13 +161,13 @@ class FastRelayConversationMember {
   final bool? online;
   final DateTime? lastActiveAt;
 
-  factory FastRelayConversationMember.fromJson(Map<String, dynamic> json) {
+  factory FastrelayConversationMember.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now().toUtc();
 
-    return FastRelayConversationMember(
+    return FastrelayConversationMember(
       userId: json['userId']?.toString() ?? '',
       user: json['user'] is Map
-          ? FastRelayUser.fromJson(_asMap(json['user']))
+          ? FastrelayUser.fromJson(_asMap(json['user']))
           : null,
       role: json['role']?.toString() ?? 'member',
       joinedAt: _parseDateTime(json['joinedAt']) ?? now,
@@ -201,8 +201,8 @@ class FastRelayConversationMember {
 }
 
 /// Filter for `queryConversations`. Only set fields are sent.
-class FastRelayConversationFilter {
-  const FastRelayConversationFilter({
+class FastrelayConversationFilter {
+  const FastrelayConversationFilter({
     this.kind,
     this.type,
     this.members,

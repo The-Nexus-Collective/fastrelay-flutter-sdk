@@ -1,5 +1,5 @@
-class FastRelayCommentReaction {
-  const FastRelayCommentReaction({
+class FastrelayCommentReaction {
+  const FastrelayCommentReaction({
     required this.id,
     required this.commentId,
     required this.userId,
@@ -13,8 +13,8 @@ class FastRelayCommentReaction {
   final String type;
   final DateTime createdAt;
 
-  factory FastRelayCommentReaction.fromJson(Map<String, dynamic> json) {
-    return FastRelayCommentReaction(
+  factory FastrelayCommentReaction.fromJson(Map<String, dynamic> json) {
+    return FastrelayCommentReaction(
       id: json['id']?.toString() ?? '',
       commentId: json['commentId']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',

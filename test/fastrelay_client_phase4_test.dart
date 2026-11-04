@@ -35,7 +35,7 @@ void main() {
       'moderation.flag posts camelCase payload and parses typed flag',
       () async {
         late http.BaseRequest captured;
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
           baseUrl: 'https://api.fastrelay.io',
@@ -86,7 +86,7 @@ void main() {
       'moderation.getMutedUsers serializes query and parses typed mutes',
       () async {
         late http.BaseRequest captured;
-        final client = FastRelayClient(
+        final client = FastrelayClient(
           apiKey: 'key_123',
           token: 'jwt_123',
           baseUrl: 'https://api.fastrelay.io',
@@ -125,7 +125,7 @@ void main() {
     );
 
     test('server auth mode is rejected in the client-only SDK', () async {
-      final client = FastRelayClient(
+      final client = FastrelayClient(
         apiKey: 'public_key',
         baseUrl: 'https://api.fastrelay.io',
         httpClient: CaptureClient((request) async => jsonResponse({})),
@@ -134,8 +134,8 @@ void main() {
       expect(
         () => client.getUser(
           'john',
-          options: const FastRelayRequestOptions(
-            auth: FastRelayAuthMode.server,
+          options: const FastrelayRequestOptions(
+            auth: FastrelayAuthMode.server,
           ),
         ),
         throwsA(

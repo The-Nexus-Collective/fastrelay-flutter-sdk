@@ -9,7 +9,7 @@ Flutter SDK for [fastrelay](https://fastrelay.io) activity feeds and chat — fe
 - Chat: direct/group conversations, messages, read receipts, typing, presence and reconnect sync on the same user, token and socket
 - Polling fallback for non-realtime environments
 - Direct-to-storage image uploads (presigned PUT) and video uploads (tus / Cloudflare Stream)
-- Structured `FastRelayApiError` with rate-limit metadata
+- Structured `FastrelayApiError` with rate-limit metadata
 
 ## Contents
 
@@ -56,7 +56,7 @@ flutter pub get
 ```dart
 import 'package:fastrelay_feed_sdk/fastrelay_feed_sdk.dart';
 
-final fastrelay = FastRelayClient(
+final fastrelay = FastrelayClient(
   apiKey: 'your_api_key',
   baseUrl: 'https://api.fastrelay.io',
 );
@@ -77,7 +77,7 @@ await timeline.addActivity({
 final page = await timeline.getActivities(query: {'limit': 25});
 ```
 
-All request and response payloads are plain `Map<String, dynamic>` in `camelCase`. Typed models (`FastRelayActivity`, `FastRelayReaction`, `FastRelayComment`, `CursorPage<T>`, etc.) are returned by the strongly-typed helpers on `FastRelayClient` — see [Activities, reactions, comments](#activities-reactions-comments).
+All request and response payloads are plain `Map<String, dynamic>` in `camelCase`. Typed models (`FastrelayActivity`, `FastrelayReaction`, `FastrelayComment`, `CursorPage<T>`, etc.) are returned by the strongly-typed helpers on `FastrelayClient` — see [Activities, reactions, comments](#activities-reactions-comments).
 
 ## Authentication
 
@@ -216,7 +216,7 @@ final team = await fastrelay.createConversation(
 );
 
 final inbox = await fastrelay.queryConversations(
-  filter: const FastRelayConversationFilter(hasUnread: true),
+  filter: const FastrelayConversationFilter(hasUnread: true),
   sort: 'lastMessageAt',
   limit: 25,
 );
@@ -225,7 +225,7 @@ final message = await fastrelay.sendMessage(
   team.id,
   text: 'Ship it?',
   replyToId: previous.id, // optional quote-reply
-  options: const FastRelayRequestOptions(idempotencyKey: 'local-id-123'),
+  options: const FastrelayRequestOptions(idempotencyKey: 'local-id-123'),
 );
 
 // Messages come back in ascending `seq`. Page backwards with `nextCursor`.
@@ -249,21 +249,21 @@ Chat events arrive on `realtime.chatEvents` — never on the feed streams. Each 
 ```dart
 realtime.chatEvents.listen((event) {
   switch (event.type) {
-    case FastRelayChatEventType.messageNew:
-    case FastRelayChatEventType.messageUpdated:
-    case FastRelayChatEventType.messageDeleted:
+    case FastrelayChatEventType.messageNew:
+    case FastrelayChatEventType.messageUpdated:
+    case FastrelayChatEventType.messageDeleted:
       upsertMessage(event.message!);
-    case FastRelayChatEventType.conversationUpdated:
+    case FastrelayChatEventType.conversationUpdated:
       upsertConversation(event.conversation!); // realtime omits `members`
-    case FastRelayChatEventType.memberAdded:
+    case FastrelayChatEventType.memberAdded:
       print('${event.userIds} joined ${event.conversationId}');
-    case FastRelayChatEventType.receiptRead:
+    case FastrelayChatEventType.receiptRead:
       print('${event.userId} read up to ${event.lastReadSeq}');
-    case FastRelayChatEventType.typingStart:
+    case FastrelayChatEventType.typingStart:
       showTyping(event.conversationId!, event.userId!);
-    case FastRelayChatEventType.presenceChanged:
+    case FastrelayChatEventType.presenceChanged:
       print('${event.userId} online=${event.online}');
-    case FastRelayChatEventType.unreadUpdated:
+    case FastrelayChatEventType.unreadUpdated:
       setBadge(event.totals!.totalUnread);
     default:
       print('unhandled ${event.type}: ${event.data}'); // forward compatible
@@ -384,7 +384,7 @@ fastrelay.realtime?.videoStatusEvents
 
 ## Aggregated / notification feeds
 
-For feeds configured with aggregation (notifications, grouped activity), use `getNotificationFeedActivities`, which returns `NotificationPage<FastRelayActivity>` with grouped entries and unseen/unread counts:
+For feeds configured with aggregation (notifications, grouped activity), use `getNotificationFeedActivities`, which returns `NotificationPage<FastrelayActivity>` with grouped entries and unseen/unread counts:
 
 ```dart
 final notifications = await fastrelay.getNotificationFeedActivities(
@@ -401,12 +401,12 @@ for (final group in notifications.groups) {
 
 ## Error handling
 
-Every non-2xx response throws `FastRelayApiError` with the parsed error envelope plus rate-limit headers:
+Every non-2xx response throws `FastrelayApiError` with the parsed error envelope plus rate-limit headers:
 
 ```dart
 try {
   await fastrelay.activities.get('act_missing');
-} on FastRelayApiError catch (error) {
+} on FastrelayApiError catch (error) {
   print('${error.status} ${error.code}: ${error.message}');
   print('hint: ${error.hint}');
   print('requestId: ${error.requestId}');

@@ -1,5 +1,5 @@
-class FastRelayPollOption {
-  const FastRelayPollOption({
+class FastrelayPollOption {
+  const FastrelayPollOption({
     required this.id,
     required this.text,
     this.voteCount = 0,
@@ -9,8 +9,8 @@ class FastRelayPollOption {
   final String text;
   final int voteCount;
 
-  factory FastRelayPollOption.fromJson(Map<String, dynamic> json) {
-    return FastRelayPollOption(
+  factory FastrelayPollOption.fromJson(Map<String, dynamic> json) {
+    return FastrelayPollOption(
       id: json['id']?.toString() ?? '',
       text: json['text']?.toString() ?? '',
       voteCount: _readInt(json['voteCount']) ?? 0,
@@ -22,8 +22,8 @@ class FastRelayPollOption {
   }
 }
 
-class FastRelayPoll {
-  const FastRelayPoll({
+class FastrelayPoll {
+  const FastrelayPoll({
     required this.id,
     required this.question,
     this.options = const [],
@@ -35,7 +35,7 @@ class FastRelayPoll {
 
   final String id;
   final String question;
-  final List<FastRelayPollOption> options;
+  final List<FastrelayPollOption> options;
   final int totalVotes;
   final String? userVote;
   final DateTime? expiresAt;
@@ -43,20 +43,20 @@ class FastRelayPoll {
 
   bool get hasVoted => userVote != null && userVote!.isNotEmpty;
 
-  factory FastRelayPoll.fromJson(Map<String, dynamic> json) {
+  factory FastrelayPoll.fromJson(Map<String, dynamic> json) {
     final rawOptions = json['options'];
     final options = rawOptions is List
         ? rawOptions
               .whereType<Map>()
               .map(
-                (entry) => FastRelayPollOption.fromJson(
+                (entry) => FastrelayPollOption.fromJson(
                   entry.map((key, value) => MapEntry(key.toString(), value)),
                 ),
               )
               .toList()
-        : const <FastRelayPollOption>[];
+        : const <FastrelayPollOption>[];
 
-    return FastRelayPoll(
+    return FastrelayPoll(
       id: json['id']?.toString() ?? '',
       question: json['question']?.toString() ?? '',
       options: options,

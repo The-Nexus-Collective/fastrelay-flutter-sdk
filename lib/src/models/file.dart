@@ -1,5 +1,5 @@
-class FastRelayFile {
-  const FastRelayFile({
+class FastrelayFile {
+  const FastrelayFile({
     required this.id,
     required this.url,
     required this.type,
@@ -17,9 +17,9 @@ class FastRelayFile {
   final Map<String, dynamic> metadata;
   final DateTime createdAt;
 
-  factory FastRelayFile.fromJson(Map<String, dynamic> json) {
+  factory FastrelayFile.fromJson(Map<String, dynamic> json) {
     final metadata = _asMap(json['metadata']);
-    return FastRelayFile(
+    return FastrelayFile(
       id: json['id']?.toString() ?? '',
       url: json['url']?.toString() ?? '',
       type: json['type']?.toString() ?? 'file',
@@ -49,9 +49,9 @@ class FastRelayFile {
 ///
 /// PUT the file body to [uploadUrl] with every entry of [requiredHeaders]
 /// before [expiresAt], then confirm it with
-/// `FastRelayClient.confirmFileUpload(fileId)`.
-class FastRelayFileUpload {
-  const FastRelayFileUpload({
+/// `FastrelayClient.confirmFileUpload(fileId)`.
+class FastrelayFileUpload {
+  const FastrelayFileUpload({
     required this.fileId,
     required this.uploadUrl,
     required this.requiredHeaders,
@@ -63,8 +63,8 @@ class FastRelayFileUpload {
   final Map<String, String> requiredHeaders;
   final DateTime expiresAt;
 
-  factory FastRelayFileUpload.fromJson(Map<String, dynamic> json) {
-    return FastRelayFileUpload(
+  factory FastrelayFileUpload.fromJson(Map<String, dynamic> json) {
+    return FastrelayFileUpload(
       fileId: json['fileId']?.toString() ?? '',
       uploadUrl: json['uploadUrl']?.toString() ?? '',
       requiredHeaders: _asMap(

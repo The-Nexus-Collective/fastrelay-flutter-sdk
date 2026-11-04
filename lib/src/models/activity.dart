@@ -1,8 +1,8 @@
 import 'reaction.dart';
 import 'user.dart';
 
-class FastRelayActivity {
-  const FastRelayActivity({
+class FastrelayActivity {
+  const FastrelayActivity({
     required this.id,
     required this.type,
     this.text,
@@ -28,7 +28,7 @@ class FastRelayActivity {
 
   /// Author user object embedded by the server. `null` when the author has
   /// no user record or the payload was not enriched.
-  final FastRelayUser? user;
+  final FastrelayUser? user;
   final List<String> feeds;
   final String visibility;
   final Map<String, dynamic>? custom;
@@ -39,19 +39,19 @@ class FastRelayActivity {
   final DateTime? expiresAt;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final List<FastRelayReaction>? ownReactions;
+  final List<FastrelayReaction>? ownReactions;
 
-  factory FastRelayActivity.fromJson(Map<String, dynamic> json) {
+  factory FastrelayActivity.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now().toUtc();
     final custom = _asMap(json['custom']);
 
-    return FastRelayActivity(
+    return FastrelayActivity(
       id: json['id']?.toString() ?? '',
       type: json['type']?.toString() ?? 'post',
       text: json['text']?.toString(),
       userId: json['userId']?.toString() ?? '',
       user: json['user'] is Map
-          ? FastRelayUser.fromJson(_asMap(json['user']))
+          ? FastrelayUser.fromJson(_asMap(json['user']))
           : null,
       feeds: _asStringList(json['feeds']),
       visibility: json['visibility']?.toString() ?? 'public',
@@ -66,7 +66,7 @@ class FastRelayActivity {
       ownReactions: json['ownReactions'] == null
           ? null
           : (json['ownReactions'] as List)
-                .map((e) => FastRelayReaction.fromJson(_asMap(e)))
+                .map((e) => FastrelayReaction.fromJson(_asMap(e)))
                 .toList(),
     );
   }

@@ -92,10 +92,10 @@ Map<String, dynamic> messageJson({String id = 'msg_1', int seq = 1}) {
   };
 }
 
-FastRelayClient buildClient(
+FastrelayClient buildClient(
   Future<http.StreamedResponse> Function(http.BaseRequest request) handler,
 ) {
-  return FastRelayClient(
+  return FastrelayClient(
     apiKey: 'key_123',
     token: 'jwt_123',
     baseUrl: 'https://api.fastrelay.io',
@@ -170,7 +170,7 @@ void main() {
       });
 
       final page = await client.queryConversations(
-        filter: const FastRelayConversationFilter(
+        filter: const FastrelayConversationFilter(
           kind: 'group',
           members: ['jane'],
           custom: {'topic': 'launch'},
@@ -267,7 +267,7 @@ void main() {
         custom: {'kind': 'note'},
         replyToId: 'msg_0',
         silent: true,
-        options: const FastRelayRequestOptions(idempotencyKey: 'idem_1'),
+        options: const FastrelayRequestOptions(idempotencyKey: 'idem_1'),
       );
 
       expect(captured.method, 'POST');
@@ -551,7 +551,7 @@ void main() {
 
   group('chat models', () {
     test('conversation parses members and lastMessage', () {
-      final conversation = FastRelayConversation.fromJson(
+      final conversation = FastrelayConversation.fromJson(
         conversationJson(withMembers: true, withLastMessage: true),
       );
 
@@ -580,7 +580,7 @@ void main() {
     });
 
     test('message parses replyTo preview', () {
-      final message = FastRelayMessage.fromJson({
+      final message = FastrelayMessage.fromJson({
         ...messageJson(id: 'msg_5', seq: 5),
         'replyToId': 'msg_2',
         'replyTo': {
@@ -603,7 +603,7 @@ void main() {
     });
 
     test('system message parses with null userId and text', () {
-      final message = FastRelayMessage.fromJson({
+      final message = FastrelayMessage.fromJson({
         'id': 'msg_sys',
         'conversationId': 'conv_1',
         'seq': 3,
@@ -626,7 +626,7 @@ void main() {
     });
 
     test('payloads with omitted nullable fields decode', () {
-      final conversation = FastRelayConversation.fromJson({
+      final conversation = FastrelayConversation.fromJson({
         'id': 'conv_min',
         'kind': 'direct',
         'type': 'messaging',
@@ -639,12 +639,12 @@ void main() {
         'updatedAt': '2026-11-01T09:00:00Z',
         'someFutureField': 'ignored',
       });
-      final member = FastRelayConversationMember.fromJson({
+      final member = FastrelayConversationMember.fromJson({
         'userId': 'jane',
         'role': 'member',
         'joinedAt': '2026-11-01T09:00:00Z',
       });
-      final deleted = FastRelayMessage.fromJson({
+      final deleted = FastrelayMessage.fromJson({
         'id': 'msg_d',
         'conversationId': 'conv_min',
         'seq': 1,
@@ -681,7 +681,7 @@ void main() {
     });
 
     test('chat event typed accessors decode payloads', () {
-      final receipt = FastRelayChatEvent.fromJson({
+      final receipt = FastrelayChatEvent.fromJson({
         'type': 'receipt.read',
         'conversationId': 'conv_1',
         'eventId': 'evt_1',
@@ -692,7 +692,7 @@ void main() {
           'lastReadAt': '2026-11-02T10:00:00Z',
         },
       });
-      final added = FastRelayChatEvent.fromJson({
+      final added = FastrelayChatEvent.fromJson({
         'type': 'member.added',
         'conversationId': 'conv_1',
         'eventId': 'evt_2',
@@ -702,7 +702,7 @@ void main() {
           'userIds': ['amy', 'bob'],
         },
       });
-      final unread = FastRelayChatEvent.fromJson({
+      final unread = FastrelayChatEvent.fromJson({
         'type': 'unread.updated',
         'eventId': 'evt_3',
         'createdAt': '2026-11-02T10:00:00Z',
@@ -724,7 +724,7 @@ void main() {
     });
 
     test('chat event with malformed typed payload returns null', () {
-      final event = FastRelayChatEvent.fromJson({
+      final event = FastrelayChatEvent.fromJson({
         'type': 'message.new',
         'conversationId': 'conv_1',
         'eventId': 'evt_bad',

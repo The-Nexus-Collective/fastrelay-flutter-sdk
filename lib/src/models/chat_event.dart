@@ -2,8 +2,8 @@ import 'chat_sync.dart';
 import 'conversation.dart';
 import 'message.dart';
 
-/// Chat event type names delivered on `FastRelayRealtime.chatEvents`.
-abstract final class FastRelayChatEventType {
+/// Chat event type names delivered on `FastrelayRealtime.chatEvents`.
+abstract final class FastrelayChatEventType {
   static const messageNew = 'message.new';
   static const messageUpdated = 'message.updated';
   static const messageDeleted = 'message.deleted';
@@ -26,8 +26,8 @@ abstract final class FastRelayChatEventType {
 /// The raw payload is always available in [data]; the typed accessors decode
 /// the parts relevant to [type] and return `null` when absent or malformed.
 /// Unknown event types are delivered too, with [data] only.
-class FastRelayChatEvent {
-  FastRelayChatEvent({
+class FastrelayChatEvent {
+  FastrelayChatEvent({
     required this.type,
     this.conversationId,
     required this.eventId,
@@ -44,28 +44,28 @@ class FastRelayChatEvent {
   final Map<String, dynamic> data;
 
   /// `message.new`, `message.updated`, `message.deleted`.
-  late final FastRelayMessage? message = _decode(
+  late final FastrelayMessage? message = _decode(
     'message',
-    FastRelayMessage.fromJson,
+    FastrelayMessage.fromJson,
   );
 
   /// `conversation.updated`, `conversation.truncated`, `member.added`.
   /// Realtime conversations never include `members`.
-  late final FastRelayConversation? conversation = _decode(
+  late final FastrelayConversation? conversation = _decode(
     'conversation',
-    FastRelayConversation.fromJson,
+    FastrelayConversation.fromJson,
   );
 
   /// `member.updated`.
-  late final FastRelayConversationMember? member = _decode(
+  late final FastrelayConversationMember? member = _decode(
     'member',
-    FastRelayConversationMember.fromJson,
+    FastrelayConversationMember.fromJson,
   );
 
   /// `unread.updated`.
-  late final FastRelayUnreadTotals? totals = _decode(
+  late final FastrelayUnreadTotals? totals = _decode(
     'totals',
-    FastRelayUnreadTotals.fromJson,
+    FastrelayUnreadTotals.fromJson,
   );
 
   /// `member.removed`, `receipt.*`, `typing.*`, `presence.changed`.
@@ -104,9 +104,9 @@ class FastRelayChatEvent {
   /// `receipt.delivered`, `receipt.read`.
   DateTime? get lastReadAt => _parseDateTime(data['lastReadAt']);
 
-  factory FastRelayChatEvent.fromJson(Map<String, dynamic> json) {
+  factory FastrelayChatEvent.fromJson(Map<String, dynamic> json) {
     final conversationId = json['conversationId']?.toString();
-    return FastRelayChatEvent(
+    return FastrelayChatEvent(
       type: json['type']?.toString() ?? '',
       conversationId: conversationId == null || conversationId.isEmpty
           ? null

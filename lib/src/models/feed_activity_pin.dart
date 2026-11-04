@@ -1,5 +1,5 @@
-class FastRelayFeedActivityPin {
-  const FastRelayFeedActivityPin({
+class FastrelayFeedActivityPin {
+  const FastrelayFeedActivityPin({
     required this.appId,
     required this.feedId,
     required this.activityId,
@@ -13,8 +13,8 @@ class FastRelayFeedActivityPin {
   final DateTime pinnedAt;
   final String pinnedBy;
 
-  factory FastRelayFeedActivityPin.fromJson(Map<String, dynamic> json) {
-    return FastRelayFeedActivityPin(
+  factory FastrelayFeedActivityPin.fromJson(Map<String, dynamic> json) {
+    return FastrelayFeedActivityPin(
       appId: json['appId']?.toString() ?? '',
       feedId: json['feedId']?.toString() ?? '',
       activityId: json['activityId']?.toString() ?? '',

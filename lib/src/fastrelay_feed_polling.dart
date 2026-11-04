@@ -5,21 +5,21 @@ import 'models/models.dart';
 
 class FeedPollingService {
   FeedPollingService({
-    required FastRelayClient client,
+    required FastrelayClient client,
     Duration activeInterval = const Duration(seconds: 15),
     Duration backgroundInterval = const Duration(seconds: 60),
   }) : _client = client,
        _activeInterval = activeInterval,
        _backgroundInterval = backgroundInterval;
 
-  final FastRelayClient _client;
+  final FastrelayClient _client;
   final Duration _activeInterval;
   final Duration _backgroundInterval;
 
   final Map<String, _PollerBase> _pollers = {};
   bool _paused = false;
 
-  Stream<CursorPage<FastRelayActivity>> pollFeed(
+  Stream<CursorPage<FastrelayActivity>> pollFeed(
     String group,
     String id, {
     int limit = 25,
@@ -44,7 +44,7 @@ class FeedPollingService {
     return poller.stream;
   }
 
-  Stream<NotificationPage<FastRelayActivity>> pollNotifications(
+  Stream<NotificationPage<FastrelayActivity>> pollNotifications(
     String group,
     String id, {
     int limit = 25,
@@ -116,17 +116,17 @@ class _FeedPoller implements _PollerBase {
     unawaited(_poll());
   }
 
-  final FastRelayClient client;
+  final FastrelayClient client;
   final String group;
   final String id;
   final int limit;
 
   final _controller =
-      StreamController<CursorPage<FastRelayActivity>>.broadcast();
+      StreamController<CursorPage<FastrelayActivity>>.broadcast();
   Timer? _timer;
   bool _isPolling = false;
 
-  Stream<CursorPage<FastRelayActivity>> get stream => _controller.stream;
+  Stream<CursorPage<FastrelayActivity>> get stream => _controller.stream;
 
   @override
   void setInterval(Duration interval) {
@@ -184,17 +184,17 @@ class _NotificationPoller implements _PollerBase {
     unawaited(_poll());
   }
 
-  final FastRelayClient client;
+  final FastrelayClient client;
   final String group;
   final String id;
   final int limit;
 
   final _controller =
-      StreamController<NotificationPage<FastRelayActivity>>.broadcast();
+      StreamController<NotificationPage<FastrelayActivity>>.broadcast();
   Timer? _timer;
   bool _isPolling = false;
 
-  Stream<NotificationPage<FastRelayActivity>> get stream => _controller.stream;
+  Stream<NotificationPage<FastrelayActivity>> get stream => _controller.stream;
 
   @override
   void setInterval(Duration interval) {
