@@ -391,6 +391,67 @@ void main() {
     });
 
     test(
+      'connectionEstablished flags reconnects without refetching feeds',
+      () async {
+        final socketFactory = FakeSocketFactory();
+        final requests = <http.BaseRequest>[];
+        final client = FastRelayClient(
+          apiKey: 'key_123',
+          token: 'jwt_123',
+          baseUrl: 'https://api.fastrelay.io',
+          httpClient: CaptureClient((request) async {
+            requests.add(request);
+            return jsonResponse({'data': []});
+          }),
+        );
+
+        client.realtime = _buildRealtime(client, socketFactory);
+        final established = <FastRelayConnectionEstablished>[];
+        final establishedSubscription = client.realtime!.connectionEstablished
+            .listen(established.add);
+        final feedSubscription = client
+            .feed('timeline', 'john')
+            .events()
+            .listen((_) {});
+        await client.realtime!.connect();
+
+        final socket1 = socketFactory.sockets.single;
+        socket1.emitConnection(FastRelayRealtimeSocketStatus.connected);
+        socket1.emitJson({
+          'type': 'connection.established',
+          'connectionId': 'conn_1',
+          'serverTime': '2026-11-04T12:00:00Z',
+        });
+        await _flush();
+        socket1.emitConnection(
+          FastRelayRealtimeSocketStatus.disconnected,
+          closeCode: 1006,
+        );
+        await _flush(const Duration(milliseconds: 80));
+
+        final socket2 = socketFactory.sockets.last;
+        socket2.emitConnection(FastRelayRealtimeSocketStatus.connected);
+        socket2.emitJson({
+          'type': 'connection.established',
+          'connectionId': 'conn_2',
+          'serverTime': '2026-11-04T12:05:00Z',
+        });
+        await _flush();
+
+        expect(established.map((e) => e.connectionId), ['conn_1', 'conn_2']);
+        expect(established.map((e) => e.isReconnect), [false, true]);
+        expect(established.last.serverTime, DateTime.utc(2026, 11, 4, 12, 5));
+        expect(requests, isEmpty);
+
+        await establishedSubscription.cancel();
+        await feedSubscription.cancel();
+        await client.realtime!.dispose();
+        client.close();
+        await socketFactory.dispose();
+      },
+    );
+
+    test(
       '4003 triggers tokenProvider refresh and reconnect with new token',
       () async {
         final socketFactory = FakeSocketFactory();
