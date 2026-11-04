@@ -1,4 +1,4 @@
-## 0.6.0
+## 1.0.0
 
 * **Breaking:** every public type is renamed from `FastRelay*` to `Fastrelay*` (e.g. `FastrelayClient`, `FastrelayRealtime`, `FastrelayApiError`, `FastrelayRequestOptions`) so the SDK spells fastrelay like the JS and Kotlin SDKs. Replace `FastRelay` with `Fastrelay` in imports and code.
 * Add chat. New REST methods on `FastrelayClient` (also grouped under `conversations`, `messages` and `chat`): `createConversation`, `queryConversations` (with `FastrelayConversationFilter`), `getConversation`, `updateConversation`, `deleteConversation`, `truncateConversation`, `listConversationMembers`, `addConversationMembers`, `updateConversationMember`, `removeConversationMember`, `sendMessage` (honours `FastrelayRequestOptions.idempotencyKey`), `listMessages` (`cursor` / `direction` / `around`), `updateMessage`, `deleteMessage`, `markConversationRead`, `getUnreadTotals` and `syncChat`. New models: `FastrelayConversation`, `FastrelayConversationMember`, `FastrelayMessage`, `FastrelayReplyPreview`, `FastrelayUnreadTotals`, `FastrelayChatSync`.

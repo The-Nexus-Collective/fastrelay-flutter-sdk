@@ -42,7 +42,7 @@ dependencies:
   fastrelay_feed_sdk:
     git:
       url: https://github.com/The-Nexus-Collective/fastrelay-flutter-sdk
-      ref: v0.6.0
+      ref: v1.0.0
 ```
 
 Then:
