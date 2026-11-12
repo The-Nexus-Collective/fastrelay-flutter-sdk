@@ -137,6 +137,7 @@ class FastrelayConversationMember {
     this.lastReadAt,
     this.online,
     this.lastActiveAt,
+    this.notificationsMuted,
   });
 
   final String userId;
@@ -161,6 +162,10 @@ class FastrelayConversationMember {
   final bool? online;
   final DateTime? lastActiveAt;
 
+  /// Your own notification setting (`muteConversation`). `null` on other
+  /// members.
+  final bool? notificationsMuted;
+
   factory FastrelayConversationMember.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now().toUtc();
 
@@ -179,6 +184,7 @@ class FastrelayConversationMember {
       lastReadAt: _parseDateTime(json['lastReadAt']),
       online: _readBool(json['online']),
       lastActiveAt: _parseDateTime(json['lastActiveAt']),
+      notificationsMuted: _readBool(json['notificationsMuted']),
     );
   }
 
@@ -196,6 +202,7 @@ class FastrelayConversationMember {
       'lastReadAt': lastReadAt?.toIso8601String(),
       'online': online,
       'lastActiveAt': lastActiveAt?.toIso8601String(),
+      'notificationsMuted': notificationsMuted,
     };
   }
 }

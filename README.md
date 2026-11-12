@@ -42,7 +42,7 @@ dependencies:
   fastrelay_feed_sdk:
     git:
       url: https://github.com/The-Nexus-Collective/fastrelay-flutter-sdk
-      ref: v1.0.0
+      ref: v1.1.0
 ```
 
 Then:
@@ -235,6 +235,16 @@ final aroundJump = await fastrelay.listMessages(team.id, around: 120, limit: 30)
 
 await fastrelay.updateMessage(message.id, text: 'Ship it!');
 await fastrelay.deleteMessage(message.id);
+
+// Reactions return the updated message. `reactions` holds the first 100 users
+// per type and `reactionCounts` the totals; page the rest.
+final reacted = await fastrelay.addMessageReaction(message.id, '❤️');
+await fastrelay.removeMessageReaction(message.id, '❤️');
+final reactors = await fastrelay.listMessageReactionUsers(message.id, '❤️', limit: 50);
+
+// No push for you; messages still arrive and count as unread.
+await fastrelay.muteConversation(team.id);
+await fastrelay.unmuteConversation(team.id);
 
 final totals = await fastrelay.markConversationRead(team.id); // or seq: N
 final unread = await fastrelay.getUnreadTotals();
