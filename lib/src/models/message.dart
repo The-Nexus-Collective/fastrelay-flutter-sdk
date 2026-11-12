@@ -14,6 +14,8 @@ class FastrelayMessage {
     this.custom = const {},
     this.replyToId,
     this.replyTo,
+    this.reactions = const {},
+    this.reactionCounts = const {},
     this.editedAt,
     this.deletedAt,
     required this.createdAt,
@@ -40,6 +42,14 @@ class FastrelayMessage {
 
   /// Preview of the message this one replies to, when [replyToId] is set.
   final FastrelayReplyPreview? replyTo;
+
+  /// Reaction type to the ids of the first 100 users who added it, in the
+  /// order they reacted. Page the rest with `listMessageReactionUsers` when
+  /// [reactionCounts] is higher.
+  final Map<String, List<String>> reactions;
+
+  /// Reaction type to the total number of users who added it.
+  final Map<String, int> reactionCounts;
   final DateTime? editedAt;
   final DateTime? deletedAt;
   final DateTime createdAt;
@@ -65,6 +75,8 @@ class FastrelayMessage {
       replyTo: json['replyTo'] is Map
           ? FastrelayReplyPreview.fromJson(_asMap(json['replyTo']))
           : null,
+      reactions: _readReactions(json['reactions']),
+      reactionCounts: _readReactionCounts(json['reactionCounts']),
       editedAt: _parseDateTime(json['editedAt']),
       deletedAt: _parseDateTime(json['deletedAt']),
       createdAt: _parseDateTime(json['createdAt']) ?? now,
@@ -84,6 +96,8 @@ class FastrelayMessage {
       'custom': custom,
       'replyToId': replyToId,
       'replyTo': replyTo?.toJson(),
+      'reactions': reactions,
+      'reactionCounts': reactionCounts,
       'editedAt': editedAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
@@ -137,6 +151,29 @@ Map<String, dynamic> _asMap(dynamic value) {
     return value.map((key, item) => MapEntry(key.toString(), item));
   }
   return const {};
+}
+
+Map<String, List<String>> _readReactions(dynamic value) {
+  if (value is! Map) {
+    return const {};
+  }
+  return value.map(
+    (type, users) => MapEntry(
+      type.toString(),
+      users is List
+          ? users.map((userId) => userId.toString()).toList()
+          : const <String>[],
+    ),
+  );
+}
+
+Map<String, int> _readReactionCounts(dynamic value) {
+  if (value is! Map) {
+    return const {};
+  }
+  return value.map(
+    (type, count) => MapEntry(type.toString(), _readInt(count) ?? 0),
+  );
 }
 
 int? _readInt(dynamic value) {

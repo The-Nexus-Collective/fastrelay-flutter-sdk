@@ -547,6 +547,101 @@ void main() {
       expect(sync.conversations, isEmpty);
       expect(sync.unread.totalUnread, 0);
     });
+
+    test('message reactions add, remove and page users', () async {
+      // given
+      final captured = <http.BaseRequest>[];
+      final client = buildClient((request) async {
+        captured.add(request);
+        if (request.method == 'GET') {
+          return jsonResponse({
+            'data': ['john', 'jane'],
+            'nextCursor': '102',
+            'hasMore': true,
+          });
+        }
+        return jsonResponse({
+          ...messageJson(),
+          'reactions': {
+            '❤️': ['john'],
+          },
+          'reactionCounts': {'❤️': 1},
+        });
+      });
+
+      // when
+      final added = await client.addMessageReaction('msg_1', '❤️');
+      await client.removeMessageReaction('msg_1', '❤️');
+      final page = await client.listMessageReactionUsers(
+        'msg_1',
+        '❤️',
+        cursor: '100',
+        limit: 2,
+      );
+      await client.messages.addReaction('msg_1', '👍');
+      await client.messages.removeReaction('msg_1', '👍');
+      await client.messages.listReactionUsers('msg_1', '👍');
+
+      // then
+      final calls = captured
+          .map(
+            (r) =>
+                '${r.method} ${r.url.path}${r.url.hasQuery ? '?${r.url.query}' : ''}',
+          )
+          .toList();
+      expect(calls, [
+        'POST /v1/messages/msg_1/reactions',
+        'DELETE /v1/messages/msg_1/reactions/%E2%9D%A4%EF%B8%8F',
+        'GET /v1/messages/msg_1/reactions/%E2%9D%A4%EF%B8%8F?cursor=100&limit=2',
+        'POST /v1/messages/msg_1/reactions',
+        'DELETE /v1/messages/msg_1/reactions/%F0%9F%91%8D',
+        'GET /v1/messages/msg_1/reactions/%F0%9F%91%8D',
+      ]);
+      expect(bodyOf(captured[0]), {'type': '❤️'});
+      expect(bodyOf(captured[3]), {'type': '👍'});
+      expect(added.reactions, {
+        '❤️': ['john'],
+      });
+      expect(added.reactionCounts, {'❤️': 1});
+      expect(page.data, ['john', 'jane']);
+      expect(page.nextCursor, '102');
+      expect(page.hasMore, isTrue);
+    });
+
+    test('mute and unmute put the notification setting', () async {
+      // given
+      final captured = <http.BaseRequest>[];
+      final client = buildClient((request) async {
+        captured.add(request);
+        return jsonResponse({
+          'userId': 'john',
+          'role': 'member',
+          'joinedAt': '2026-11-01T09:00:00Z',
+          'notificationsMuted': bodyOf(request) is Map
+              ? (bodyOf(request) as Map)['muted']
+              : null,
+        });
+      });
+
+      // when
+      final muted = await client.muteConversation('conv_1');
+      final unmuted = await client.unmuteConversation('conv_1');
+      await client.conversations.mute('conv_1');
+      await client.conversations.unmute('conv_1');
+
+      // then
+      expect(captured.map((r) => '${r.method} ${r.url.path}').toSet(), {
+        'PUT /v1/conversations/conv_1/notifications',
+      });
+      expect(captured.map(bodyOf).toList(), [
+        {'muted': true},
+        {'muted': false},
+        {'muted': true},
+        {'muted': false},
+      ]);
+      expect(muted.notificationsMuted, isTrue);
+      expect(unmuted.notificationsMuted, isFalse);
+    });
   });
 
   group('chat models', () {
@@ -600,6 +695,29 @@ void main() {
       expect(message.replyTo?.deleted, isFalse);
       expect(message.isEdited, isTrue);
       expect(message.isDeleted, isFalse);
+    });
+
+    test('message parses reactions and defaults them to empty', () {
+      // given
+      final reacted = {
+        ...messageJson(id: 'msg_6', seq: 6),
+        'reactions': {
+          '❤️': ['john', 'jane'],
+          '👍': ['john'],
+        },
+        'reactionCounts': {'❤️': 120, '👍': 1},
+      };
+
+      // when
+      final withReactions = FastrelayMessage.fromJson(reacted);
+      final withoutReactions = FastrelayMessage.fromJson(messageJson());
+
+      // then
+      expect(withReactions.reactions['❤️'], ['john', 'jane']);
+      expect(withReactions.reactionCounts, {'❤️': 120, '👍': 1});
+      expect(withReactions.toJson()['reactionCounts'], {'❤️': 120, '👍': 1});
+      expect(withoutReactions.reactions, isEmpty);
+      expect(withoutReactions.reactionCounts, isEmpty);
     });
 
     test('system message parses with null userId and text', () {

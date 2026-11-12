@@ -1,3 +1,8 @@
+## 1.1.0
+
+* Add message reactions: `addMessageReaction`, `removeMessageReaction` and `listMessageReactionUsers` (also `messages.addReaction`, `messages.removeReaction`, `messages.listReactionUsers`). `FastrelayMessage.reactions` maps each type to the first 100 users who added it, in reaction order, and `FastrelayMessage.reactionCounts` to the totals; `listMessageReactionUsers` pages the rest with `cursor` and `limit`. A reaction change arrives as a `message.updated` chat event and through `syncChat`.
+* Add per-member notification mute: `muteConversation` and `unmuteConversation` (also `conversations.mute` / `conversations.unmute`) call `PUT /v1/conversations/{id}/notifications` and return your member row. `FastrelayConversationMember.notificationsMuted` is set only on your own row. Messages still arrive and count as unread.
+
 ## 1.0.0
 
 * **Breaking:** every public type is renamed from `FastRelay*` to `Fastrelay*` (e.g. `FastrelayClient`, `FastrelayRealtime`, `FastrelayApiError`, `FastrelayRequestOptions`) so the SDK spells fastrelay like the JS and Kotlin SDKs. Replace `FastRelay` with `Fastrelay` in imports and code.

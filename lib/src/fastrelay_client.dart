@@ -1359,6 +1359,39 @@ class FastrelayClient {
     );
   }
 
+  /// Turns off push notifications for the current user in this conversation.
+  /// Messages still arrive and count as unread; the app's backend sees
+  /// `notificationsMuted` on each `message.created` webhook and sends no
+  /// push. Only you see the setting, as `notificationsMuted` on your member.
+  Future<FastrelayConversationMember> muteConversation(
+    String conversationId, {
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
+  }) {
+    return _setConversationNotificationsMuted(conversationId, true, options);
+  }
+
+  Future<FastrelayConversationMember> unmuteConversation(
+    String conversationId, {
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
+  }) {
+    return _setConversationNotificationsMuted(conversationId, false, options);
+  }
+
+  Future<FastrelayConversationMember> _setConversationNotificationsMuted(
+    String conversationId,
+    bool muted,
+    FastrelayRequestOptions options,
+  ) async {
+    final response = await _request(
+      method: 'PUT',
+      path:
+          '/v1/conversations/${Uri.encodeComponent(conversationId)}/notifications',
+      body: {'muted': muted},
+      options: options,
+    );
+    return FastrelayConversationMember.fromJson(_asMap(response));
+  }
+
   /// Sends a message. Pass `FastrelayRequestOptions(idempotencyKey: ...)` to
   /// make retries safe.
   Future<FastrelayMessage> sendMessage(
@@ -1438,6 +1471,66 @@ class FastrelayClient {
       method: 'DELETE',
       path: '/v1/messages/${Uri.encodeComponent(messageId)}',
       options: options,
+    );
+  }
+
+  /// Adds the current user's reaction of [type] (1–64 characters, e.g. an
+  /// emoji) and returns the message. Adding one you already hold changes
+  /// nothing; a message holds at most 25 types.
+  Future<FastrelayMessage> addMessageReaction(
+    String messageId,
+    String type, {
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/v1/messages/${Uri.encodeComponent(messageId)}/reactions',
+      body: {'type': type},
+      options: options,
+    );
+    return FastrelayMessage.fromJson(_asMap(response));
+  }
+
+  /// Removes the current user's reaction of [type] and returns the message.
+  Future<FastrelayMessage> removeMessageReaction(
+    String messageId,
+    String type, {
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
+  }) async {
+    final response = await _request(
+      method: 'DELETE',
+      path:
+          '/v1/messages/${Uri.encodeComponent(messageId)}/reactions/${Uri.encodeComponent(type)}',
+      options: options,
+    );
+    return FastrelayMessage.fromJson(_asMap(response));
+  }
+
+  /// Lists the ids of the users who added [type], in the order they reacted,
+  /// up to 100 per page. [cursor] is the previous page's `nextCursor`.
+  Future<CursorPage<String>> listMessageReactionUsers(
+    String messageId,
+    String type, {
+    String? cursor,
+    int? limit,
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
+  }) async {
+    final response = _asMap(
+      await _request(
+        method: 'GET',
+        path:
+            '/v1/messages/${Uri.encodeComponent(messageId)}/reactions/${Uri.encodeComponent(type)}',
+        query: {'cursor': cursor, 'limit': limit},
+        options: options,
+      ),
+    );
+    final data = response['data'];
+    return CursorPage<String>(
+      data: data is List
+          ? data.map((userId) => userId.toString()).toList()
+          : const [],
+      nextCursor: response['nextCursor']?.toString(),
+      hasMore: response['hasMore'] == true,
     );
   }
 
@@ -2328,6 +2421,20 @@ class FastrelayConversationsApi {
       options: options,
     );
   }
+
+  Future<FastrelayConversationMember> mute(
+    String conversationId, {
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
+  }) {
+    return _client.muteConversation(conversationId, options: options);
+  }
+
+  Future<FastrelayConversationMember> unmute(
+    String conversationId, {
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
+  }) {
+    return _client.unmuteConversation(conversationId, options: options);
+  }
 }
 
 class FastrelayMessagesApi {
@@ -2390,6 +2497,38 @@ class FastrelayMessagesApi {
     FastrelayRequestOptions options = const FastrelayRequestOptions(),
   }) {
     return _client.deleteMessage(messageId, options: options);
+  }
+
+  Future<FastrelayMessage> addReaction(
+    String messageId,
+    String type, {
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
+  }) {
+    return _client.addMessageReaction(messageId, type, options: options);
+  }
+
+  Future<FastrelayMessage> removeReaction(
+    String messageId,
+    String type, {
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
+  }) {
+    return _client.removeMessageReaction(messageId, type, options: options);
+  }
+
+  Future<CursorPage<String>> listReactionUsers(
+    String messageId,
+    String type, {
+    String? cursor,
+    int? limit,
+    FastrelayRequestOptions options = const FastrelayRequestOptions(),
+  }) {
+    return _client.listMessageReactionUsers(
+      messageId,
+      type,
+      cursor: cursor,
+      limit: limit,
+      options: options,
+    );
   }
 }
 
